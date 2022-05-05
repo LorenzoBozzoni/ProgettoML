@@ -1,0 +1,45 @@
+Bilanciare precision e recall
+Codifica variabili categoriche
+Correlazione variabili per eliminarne qualcuna
+Eliminare outliers per evitare overfitting --> guardando distribuzione e vedendo quanto sono fuori (dev stan)
+
+
+
+
+FEATURES DA ELIMINARE:
+- ID :  sicuramente l'ID non c'entra con i valori predetti
+- year : l'unico motivo valido per cui si potrebbe togliere è che col tempo potrebbe cambiare ma allora anche il futuro tanto uguale e allora si può togliere
+- 
+
+
+Cose da fare:
+Statistiche e grafici sui dati
+- plot dei dati, dicendo di che tipologia sono 
+- percentuale valori vuoti
+
+
+Analisi/preparazione dei dati
+- feature selection
+- mettere valore medio per elementi vuoti (?)
+- trovare outliers con deviazione standard ed eliminarli per evitare overfitting
+- codifica valori non rappresentabili --> cosa dicono le diapo?
+- test chi2 e  informazione media mutua
+- feature scaling
+- divisione in 
+
+Modelli
+- regressione lineare
+- regressione  polinomiale 
+- decision tree
+- CART
+- ensemble learning --> adaboost, gradient_boosting, XGboost
+- reti neurali
+
+
+Per ogni modello poi bisogna sistemare gli iperparametri con grid e random search utilizzando le misure di prestazioni viste: precision, accuracy e recall (ragionando su quale abbia più importanza per noi)
+Questo si fa con la k-fold cross-validation
+
+Comparazione
+
+
+
