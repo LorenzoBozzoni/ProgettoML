@@ -21,7 +21,7 @@ Statistiche e grafici sui dati
 Analisi/preparazione dei dati
 - feature selection
 - mettere valore medio per elementi vuoti (?)
-- trovare outliers con deviazione standard ed eliminarli per evitare overfitting
+- trovare outliers con deviazione standard ed eliminarli per evitare overfitting --> attenzione che valori statistici molto deviati per colpa di outliers quindi è un po' un cane che si morde la coda
 - codifica valori non rappresentabili --> cosa dicono le diapo?
 - test chi2 e  informazione media mutua
 - feature scaling

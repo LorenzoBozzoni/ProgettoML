@@ -5,6 +5,7 @@ from mpl_toolkits import mplot3d
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 from IPython.display import display
+import seaborn as sns
 
 
 df = pd.read_csv("./Loan_Default.csv")
@@ -45,7 +46,7 @@ featureScores = pd.concat([dfcolumns, dfscores], axis=1)
 featureScores.columns = ["Specs", "Score"]  # naming the dataframe columns
 print(featureScores)"""
 
-
+df.drop(["ID", "year"], axis=1, inplace=True)
 display(df.describe())
 
 
@@ -81,3 +82,72 @@ ydata = np.cos(zdata) + 0.1 * np.random.randn(100)
 ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap="Greens")
 plt.show()
 """
+
+# istogramma con asse x i nomi delle features e y percentuale valori mancanti per quella features
+
+# print(df.head)
+
+
+"""figure, axis = plt.subplots(4, 4)
+
+for i in range(0,4):
+    for j in range(0,4):
+        axis[i,j].bar(qualitative_features[i*j + j],  )"""
+
+
+for column in df.columns:
+    # numberOfValues = df[column].nunique()
+    # differentValues = df[column].unique()
+    # print("COLUMN NAME:",column," - NUMBER OF VALUES:",numberOfValues," - VALUES:",differentValues,"\n",)
+    frequency = df[column].value_counts()  # dropna=False
+    # plt.figure(figsize=(10, 5))
+    print(
+        "frequency.index of lenght",
+        frequency.index.values.size,
+        " : ",
+        frequency.index.values,
+        " frequency.values: of lenght",
+        frequency.values.size,
+        " : ",
+        frequency.values,
+    )
+    plt.figure(figsize=(10, 5))
+
+    print(type(frequency.index.values.tolist()))
+    sns.histplot(x=frequency.index, y=frequency.values, alpha=0.8, stat="density")
+    # sns.barplot
+    # sns.pointplot
+
+    # plt.title("Distribution of values for column", column)
+    plt.ylabel("Number of Occurrences", fontsize=12)
+    plt.xlabel("Values", fontsize=12)
+    plt.show()
+
+    # print(frequency)
+    # f_matrix = np.array(frequency)
+    # print("colonna 0:", f_matrix[:0], "colonna 1:", f_matrix[:1])
+    # matrix = np.matrix(frequency)
+    # plt.bar()
+    # plt.plot(np.arange(0, numberOfValues, 1), differentValues, "r")
+    # print("PRIMA COLONNA:", frequency[[]])
+    #
+
+    """plt.bar(
+        frequency.index.values,
+        frequency.values,
+        width=1,
+        edgecolor="white",
+        linewidth=0.7,
+    )"""
+
+    # print("matrix column 0:", matrix[:0], "matrix column 1:", matrix[:1])
+    # plt.plot(frequency.index.values, frequency.values, "r")
+    # plt.show()
+
+
+# qualitative_features.plot(kind="hist")
+# plt.show()
+
+
+# for c in df.columns.values:
+#    print("nvalues", c, ": ", df[c].nunique())
