@@ -17,12 +17,14 @@ features = [i for i in df.columns.values if i not in [target]]
 
 original_df = df.copy(deep=True)
 
-
+"""
 print(
     "\n\033[1mInference:\033[0m The Datset consists of {} features & {} samples.".format(
         df.shape[1], df.shape[0]
     )
 )
+
+
 
 
 df.info()
@@ -33,7 +35,7 @@ print("TOTAL LENGTH:", len(df))
 print("FIRST ELEMENT: ", ID_ARRAY[0])
 print("LAST ELEMENT: ", ID_ARRAY[len(ID_ARRAY) - 1])
 print("DIFFERENCE: ", ID_ARRAY[len(ID_ARRAY) - 1] - ID_ARRAY[0])
-
+"""
 
 """y = df.pop("Status")
 X = df
@@ -63,8 +65,7 @@ ax = plt.axes(projection="3d")
 ax.plot3D(c, b, a, "gray")"""
 
 
-"""
-3D PLOT EXAMPLE
+"""3D PLOT EXAMPLE
 
 fig = plt.figure()
 ax = plt.axes(projection="3d")
@@ -83,10 +84,6 @@ ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap="Greens")
 plt.show()
 """
 
-# istogramma con asse x i nomi delle features e y percentuale valori mancanti per quella features
-
-# print(df.head)
-
 
 """figure, axis = plt.subplots(4, 4)
 
@@ -96,11 +93,8 @@ for i in range(0,4):
 
 
 for column in df.columns:
-    # numberOfValues = df[column].nunique()
-    # differentValues = df[column].unique()
-    # print("COLUMN NAME:",column," - NUMBER OF VALUES:",numberOfValues," - VALUES:",differentValues,"\n",)
     frequency = df[column].value_counts()  # dropna=False
-    # plt.figure(figsize=(10, 5))
+
     print(
         "frequency.index of lenght",
         frequency.index.values.size,
@@ -113,8 +107,14 @@ for column in df.columns:
     )
     plt.figure(figsize=(10, 5))
 
+    """ GET THE LABEL FOR NUMBER OF OCCURRENCES
     print(type(frequency.index.values.tolist()))
-    sns.histplot(x=frequency.index, y=frequency.values, alpha=0.8, stat="density")
+    """
+
+    if df[column].nunique() < 7:
+        sns.barplot(x=frequency.index, y=frequency.values, alpha=0.8)
+    else:
+        sns.histplot(data=frequency.values, alpha=0.8, stat="density")
     # sns.barplot
     # sns.pointplot
 
@@ -122,32 +122,3 @@ for column in df.columns:
     plt.ylabel("Number of Occurrences", fontsize=12)
     plt.xlabel("Values", fontsize=12)
     plt.show()
-
-    # print(frequency)
-    # f_matrix = np.array(frequency)
-    # print("colonna 0:", f_matrix[:0], "colonna 1:", f_matrix[:1])
-    # matrix = np.matrix(frequency)
-    # plt.bar()
-    # plt.plot(np.arange(0, numberOfValues, 1), differentValues, "r")
-    # print("PRIMA COLONNA:", frequency[[]])
-    #
-
-    """plt.bar(
-        frequency.index.values,
-        frequency.values,
-        width=1,
-        edgecolor="white",
-        linewidth=0.7,
-    )"""
-
-    # print("matrix column 0:", matrix[:0], "matrix column 1:", matrix[:1])
-    # plt.plot(frequency.index.values, frequency.values, "r")
-    # plt.show()
-
-
-# qualitative_features.plot(kind="hist")
-# plt.show()
-
-
-# for c in df.columns.values:
-#    print("nvalues", c, ": ", df[c].nunique())
