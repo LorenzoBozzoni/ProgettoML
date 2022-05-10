@@ -1,3 +1,6 @@
+from asyncio.windows_events import NULL
+from cmath import nan
+from joblib import PrintTime
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -85,15 +88,31 @@ plt.show()
 """
 
 
-"""figure, axis = plt.subplots(4, 4)
+""" PLOT MULTIPLE GRAPH ALTOGETHER
+figure, axis = plt.subplots(4, 4)
 
 for i in range(0,4):
     for j in range(0,4):
         axis[i,j].bar(qualitative_features[i*j + j],  )"""
 
 
+cat_features = []
+num_features = []
+
+fig, ax = plt.subplots(6, 6)
+coordx = 0
+coordy = 0
+
+# DATA VISUALIZATION
 for column in df.columns:
-    frequency = df[column].value_counts()  # dropna=False
+    print("coordx", coordx, "coordy", coordy)
+    if coordx == 4 and coordy == 6:
+        break
+    elif coordx == 6:
+        coordx = 0
+        coordy += 1
+
+    frequency = df[column].value_counts(dropna=False)  #
 
     print(
         "frequency.index of lenght",
@@ -105,20 +124,93 @@ for column in df.columns:
         " : ",
         frequency.values,
     )
-    plt.figure(figsize=(10, 5))
+    # plt.figure(figsize=(10, 10))
 
     """ GET THE LABEL FOR NUMBER OF OCCURRENCES
     print(type(frequency.index.values.tolist()))
     """
 
-    if df[column].nunique() < 7:
-        sns.barplot(x=frequency.index, y=frequency.values, alpha=0.8)
+    # plt.subplot(1, 2, 1)
+    if df[column].nunique() <= 7:
+        cat_features.append(df[column])
+        sns.barplot(
+            x=frequency.index, y=frequency.values, alpha=0.8, ax=ax[coordx, coordy]
+        )
+        coordx += 1
     else:
-        sns.histplot(data=frequency.values, alpha=0.8, stat="density")
+        num_features.append(df[column])
+        maxF = max(frequency.values)
+        minF = min(frequency.values)
+        barWidth = (maxF - minF) / 15
+        sns.set_style("whitegrid")
+        sns.distplot(
+            df[column],
+            kde=False,
+            color="red",
+            bins=15,
+            ax=ax[coordx, coordy],
+        )
+        coordx += 1
     # sns.barplot
     # sns.pointplot
 
-    # plt.title("Distribution of values for column", column)
+    plt.title("Distribution of values for column " + column)
     plt.ylabel("Number of Occurrences", fontsize=12)
     plt.xlabel("Values", fontsize=12)
-    plt.show()
+
+    # valueNan = frequency.index.values[2]
+    # print(type(valueNan))
+
+    """    nnv = 0
+    nv = 0
+    for i in range(0, len(frequency.values)):
+        if not pd.isna(frequency.index.values[i]):
+            nnv += frequency.values[i]
+        else:
+            nv += frequency.values[i]
+
+    pielist = [(nnv / (nnv + nv)), (nv / (nnv + nv))]
+    colors = plt.get_cmap("Blues")(np.linspace(0.4, 0.9, len(pielist)))
+    print(pielist)
+
+    
+    print(
+        "frequency.index of lenght",
+        frequency.index.values.size,
+        " : ",
+        frequency.index.values,
+        " frequency.values: of lenght",
+        frequency.values.size,
+        " : ",
+        frequency.values,
+    )
+    plt.subplot(1, 2, 2)
+    plt.pie(
+        pielist,  # frequency.values,
+        colors=colors,
+        radius=3,
+        center=(4, 4),
+        wedgeprops={"linewidth": 1, "edgecolor": "white"},
+        frame=True,
+    )"""
+
+
+fig.show()
+plt.show()
+
+
+"""for index in range(0, len(cat_features)):
+    values = df[:, index]
+    print("TYPE", type(values))
+
+    # for element in column:"""
+
+
+# dummies = pd.get_dummies(df, columns=["age"])
+# print(dummies.head)
+
+fig, ax = plt.subplots()
+ax.set_title("Null values")
+sns.heatmap(df.isnull(), yticklabels=False, cbar=False, cmap="viridis", robust=True)
+fig.show()
+plt.show()
