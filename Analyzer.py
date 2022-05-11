@@ -11,6 +11,11 @@ from IPython.display import display
 import seaborn as sns
 
 
+import warnings
+
+warnings.filterwarnings("ignore")
+
+
 df = pd.read_csv("./Loan_Default.csv")
 # df.drop(["ID", "year"], axis=1, inplace=True)
 
@@ -20,7 +25,7 @@ features = [i for i in df.columns.values if i not in [target]]
 
 original_df = df.copy(deep=True)
 
-"""
+""" @deprecated - Useless things used in first instance
 print(
     "\n\033[1mInference:\033[0m The Datset consists of {} features & {} samples.".format(
         df.shape[1], df.shape[0]
@@ -38,9 +43,9 @@ print("TOTAL LENGTH:", len(df))
 print("FIRST ELEMENT: ", ID_ARRAY[0])
 print("LAST ELEMENT: ", ID_ARRAY[len(ID_ARRAY) - 1])
 print("DIFFERENCE: ", ID_ARRAY[len(ID_ARRAY) - 1] - ID_ARRAY[0])
-"""
 
-"""y = df.pop("Status")
+
+y = df.pop("Status")
 X = df
 bestfeatures = SelectKBest(score_func=chi2, k=2)
 fit = bestfeatures.fit(X, y)
@@ -52,20 +57,8 @@ featureScores.columns = ["Specs", "Score"]  # naming the dataframe columns
 print(featureScores)"""
 
 df.drop(["ID", "year"], axis=1, inplace=True)
-display(df.describe())
-
-
-"""a = np.array(df[["ID"]])
-b = np.array(df[["Upfront_charges"]])
-c = np.array(df[["Interest_rate_spread"]])
-plt.plot(a, b, "rd")
-plt.show()
-print(a)
-
-
-fig = plt.figure()
-ax = plt.axes(projection="3d")
-ax.plot3D(c, b, a, "gray")"""
+s = df["Status"]
+# display(df.describe())
 
 
 """3D PLOT EXAMPLE
@@ -88,14 +81,6 @@ plt.show()
 """
 
 
-""" PLOT MULTIPLE GRAPH ALTOGETHER
-figure, axis = plt.subplots(4, 4)
-
-for i in range(0,4):
-    for j in range(0,4):
-        axis[i,j].bar(qualitative_features[i*j + j],  )"""
-
-
 cat_features = []
 num_features = []
 
@@ -105,7 +90,7 @@ coordy = 0
 
 # DATA VISUALIZATION
 for column in df.columns:
-    print("coordx", coordx, "coordy", coordy)
+    # print("coordx", coordx, "coordy", coordy)
     if coordx == 4 and coordy == 6:
         break
     elif coordx == 6:
@@ -114,6 +99,7 @@ for column in df.columns:
 
     frequency = df[column].value_counts(dropna=False)  #
 
+    """ @debug - Printing categories and their relative cardinality 
     print(
         "frequency.index of lenght",
         frequency.index.values.size,
@@ -123,7 +109,7 @@ for column in df.columns:
         frequency.values.size,
         " : ",
         frequency.values,
-    )
+    )"""
     # plt.figure(figsize=(10, 10))
 
     """ GET THE LABEL FOR NUMBER OF OCCURRENCES
@@ -144,7 +130,7 @@ for column in df.columns:
         barWidth = (maxF - minF) / 15
         sns.set_style("whitegrid")
         sns.distplot(
-            df[column],
+            df[column].dropna(),
             kde=False,
             color="red",
             bins=15,
@@ -161,7 +147,8 @@ for column in df.columns:
     # valueNan = frequency.index.values[2]
     # print(type(valueNan))
 
-    """    nnv = 0
+    """ @deprecated - DIAGRAMMA A TORTA PER VALORI NULLI
+    nnv = 0
     nv = 0
     for i in range(0, len(frequency.values)):
         if not pd.isna(frequency.index.values[i]):
@@ -195,22 +182,48 @@ for column in df.columns:
     )"""
 
 
-fig.show()
 plt.show()
 
 
-"""for index in range(0, len(cat_features)):
-    values = df[:, index]
-    print("TYPE", type(values))
+# questa riga sotto è corretta ma usa uno spatasso di RAM
+# sns.heatmap(df.isnull(), yticklabels=False, cbar=False, cmap="viridis", robust=True)
+sns.heatmap(
+    df[["age", "Interest_rate_spread", "rate_of_interest"]].isnull(), cmap="viridis"
+)
 
-    # for element in column:"""
+
+plt.show()
 
 
-# dummies = pd.get_dummies(df, columns=["age"])
-# print(dummies.head)
+dfNumeric = df  # copy of the dataframe, df contains categorical values while dfNumeric has all those values converted in numeric
 
-fig, ax = plt.subplots()
-ax.set_title("Null values")
-sns.heatmap(df.isnull(), yticklabels=False, cbar=False, cmap="viridis", robust=True)
-fig.show()
+# substituing categorical values with numerical ones
+for (columnName, columnData) in df.iteritems():
+    if columnData.nunique() <= 7 and columnName != "Status":
+        print("columnName:", columnName)
+        freqSeries = columnData.value_counts()
+        # print("PRIMA:", columnData)
+        # print("columnData.value_counts().values: ", columnData.value_counts().index)
+        # print("np.arange(0, columnData.nunique())", np.arange(0, columnData.nunique()))
+        dfNumeric[columnName].replace(
+            columnData.value_counts().index,
+            np.arange(0, columnData.nunique()),
+            inplace=True,
+        )
+        # print("DOPO:", df[columnName])
+
+pd.set_option(
+    "display.max_columns", None
+)  # used when displaying informations regarding an high number of columns (by default some are omitted)
+
+
+# displaying information for the newly created dataframe
+display(dfNumeric.describe(include="all"))
+
+
+# plotting correlation grid for all features (used for null values management)
+fig, ax = plt.subplots(figsize=(32, 32))
+ax = sns.heatmap(
+    dfNumeric.corr(), vmin=-1, vmax=1, cmap="BrBG"
+)  # non prende le features categoriche
 plt.show()
