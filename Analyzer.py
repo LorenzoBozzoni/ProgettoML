@@ -1,5 +1,6 @@
 from asyncio.windows_events import NULL
 from cmath import nan
+from math import sqrt
 from turtle import title
 from unittest import TextTestRunner
 from joblib import PrintTime
@@ -7,24 +8,29 @@ from matplotlib.ft2font import HORIZONTAL
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from dtreeviz.trees import dtreeviz # remember to load the package
 from mpl_toolkits import mplot3d
 from sklearn import linear_model
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
+from sklearn.tree import DecisionTreeClassifier, plot_tree
 from IPython.display import display
-from sklearn.metrics import accuracy_score, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, mean_squared_error, recall_score, f1_score, confusion_matrix
 import seaborn as sns
 import warnings
-
-from sklearn.model_selection import train_test_split
-
+from sklearn.model_selection import cross_val_score, train_test_split, KFold, GridSearchCV
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
+from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier
+from xgboost import XGBClassifier
+from sklearn.decomposition import PCA
+# not showing warnings in terminal window
 warnings.filterwarnings("ignore")
 
 
 # 10 FEATURES NUMERICHE
 # 22 FEATURES CATEGORICHE
 
-# Helper function used for visualization in the following examples
+#region functions
 def identify_axes(ax_dict, fontsize=48):
     """
     Helper to identify the Axes in the examples below.
@@ -69,7 +75,6 @@ def visualizeCategorical(df):
     fig.show()
     plt.show()
 
-
 def visualizeNumerical(df):
     letters = ["A","B","C","D","E","F","G","H","I","L"]
     indexer = -1
@@ -106,7 +111,7 @@ def getScoreMetrics(y_test, y_pred):
         y_test, y_pred, labels=[0, 1]
     )  # labels ti permette di specificare quale label (target output) considerare nella confusion matrix
     print(m)
-
+#endregion
 
 
 
@@ -140,7 +145,7 @@ plt.show()"""
 dfNumeric = df  # copy of the dataframe, df contains categorical values while dfNumeric has all those values converted in numeric
 
 
-# removing outvalues
+#region removing outvalues
 for (columnName, columnData) in df.iteritems():
     if columnData.nunique() > 7 and columnName != "Status":
 
@@ -148,8 +153,9 @@ for (columnName, columnData) in df.iteritems():
         min_thresold = dfNumeric[columnName].quantile(0.005)
         print("COLONNA CON OUTVALUES", columnName, "MAXPERC",max_thresold, "MINPERC",min_thresold)
         dfNumeric = df[(df[columnName] < max_thresold) & (df[columnName] > min_thresold)]
+#endregion
 
-# substituing categorical values with numerical ones
+#region substituing categorical values with numerical ones
 for (columnName, columnData) in df.iteritems():
     if columnData.nunique() <= 7 and columnName != "Status":
         # print("columnName:", columnName)
@@ -159,9 +165,7 @@ for (columnName, columnData) in df.iteritems():
 
         dfNumeric[columnName].replace(columnData.value_counts().index,np.arange(0, columnData.nunique()),inplace=True)
         #print(dfNumeric[columnName])
-
-
-
+#endregion
 
 
 
@@ -192,31 +196,216 @@ X = dfNumeric.drop(target, axis = 1)
 y = dfNumeric[target]
 
 
-'''print("ShapeDf",df.shape)
+''' obtaining matrices size
+print("ShapeDf",df.shape)
 print("ShapeDfNumeric",dfNumeric.shape)
 
 print("ShapeX",X.shape)
-print("Shapey",y.shape)'''
+print("Shapey",y.shape)
+'''
 
-
+'''  SAVING dfNumeric IN CSV FILE 
 import os  
 os.makedirs('./', exist_ok=True)  
 dfNumeric.to_csv('./out.csv') 
 
-X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.3,stratify=y)
-'''regr = linear_model.LinearRegression()  # creating a linear model object
-regr.fit(X_train, y_train)
-y_pred = regr.predict(X_test)
 '''
 
+
+
+
+# feature scaling
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+print("Size X_scaled:", X_scaled.shape)
+
+# dimensionality reduction
+pca = PCA(0.95)
+X_pca = pca.fit_transform(X_scaled)
+print("Size X_PCA:", X_pca.shape)
+
+
+# logistic regression has not parameters to be tuned
+reg = linear_model.LogisticRegression(solver="liblinear",class_weight='balanced')
+scores = cross_val_score(reg, X_pca,y, cv=10, scoring="accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
+print(scores.mean())
+
+
+# indipendente da min_sample_leaf per valori bassi (100-1000), nel range (2000-10000) valore costanti 0.977554
+clf = DecisionTreeClassifier(class_weight='balanced') #min_samples_leaf=5000, max_depth=10
+sample_range = list(np.arange(10000,15001,1000))
+depth_range = list(range(2,8))
+param_grid = dict(min_samples_leaf=sample_range, max_depth=depth_range)    
+print(param_grid)
+grid = GridSearchCV(clf, param_grid=param_grid, cv=10, scoring="accuracy")
+grid.fit(X_pca,y)
+santocielo = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
+print("DecisionTree:",santocielo)
+#print(grid.best_score_)
+#print(grid.best_params_)
+
+
+
+modelAda = AdaBoostClassifier()   #n_estimators = 2
+estimators_range = list(np.arange(50,76,5))
+learning_rate_range = list(np.arange(4,6,1))
+param_grid = dict(n_estimators=estimators_range, learning_rate=learning_rate_range)    
+print(param_grid)
+grid = GridSearchCV(modelAda, param_grid=param_grid, cv=5, scoring="accuracy")
+grid.fit(X_pca,y)
+santocielo = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
+print("AdaBoost:",santocielo)
+#endregion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+# dividing values in train and test part
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.3)
+
+kf =KFold(n_splits=10, random_state=None, shuffle=False) #initialize KFold
+for train_index, validation_index in kf.split(X):
+    print("TRAIN:", train_index, "VALIDATION:", validation_index)
+    X_train = X.iloc[train_index]
+    X_validation = X.iloc[validation_index]
+    y_train= y[train_index]
+    y_validation = y[validation_index]
+
+
+
+#region linear regression model
+regr = linear_model.LinearRegression()  # creating a linear model object
+regr.fit(X_train, y_train)
+y_pred_regr = regr.predict(X_test)
+print('Mean square error: %.2f' % mean_squared_error(y_test, y_pred_regr))
+#endregion
+
+
+
+#region building a logistic regression model
 logreg = linear_model.LogisticRegression(solver="liblinear",class_weight='balanced')
 logreg.fit(X_train, y_train)
-y_pred = logreg.predict(X_test)
+y_pred_logreg = logreg.predict(X_test)
 print(logreg.score(X_test,y_test))
+# visualize model score (for classification tasks)
+getScoreMetrics(y_test=y_test, y_pred=y_pred_logreg)
+#endregion
 
+
+
+#region building a decision tree classifier model
+clf = DecisionTreeClassifier(max_depth=10, class_weight='balanced',min_samples_leaf=5000)   
+clf.fit(X_train, y_train)
+y_pred_clf = clf.predict(X_test)
+getScoreMetrics(y_test=y_test, y_pred=y_pred_clf)
+plot_tree(clf, filled=True)
+plt.show()
+# another visualization for decision tree classifier
+viz = dtreeviz(clf, X, y,target_name="Status",feature_names=dfNumeric.columns)
+viz.view()
+#endregion
+
+
+
+#region polynomial linear regression
+poly = PolynomialFeatures(degree=1)
+X_poly= poly.fit_transform(X)
+X_train, X_test, y_train, y_test = train_test_split(X_poly, y, test_size=0.33)
+# Create linear regression object
+regr = linear_model.Ridge(alpha=5.)#LinearRegression()
+# Train the model using the training sets
+regr.fit(X_train, y_train)
+# Make predictions using the testing set
+y_pred = regr.predict(X_test)
+y_train_pred = regr.predict(X_train)
+# The mean squared error
+#print('Mean squared error on train: %.2f'% mean_squared_error(y_test, y_pred))
+rmse_train = sqrt(mean_squared_error(y_train, y_train_pred))
+print('Mean squared error on train: %.2f'% mean_squared_error(y_train, y_train_pred))
+# The mean squared error
+print('Mean squared error on test: %.2f'% mean_squared_error(y_test, y_pred))
+rmse_test = sqrt(mean_squared_error(y_test, y_pred))
+#endregion
+
+
+
+#region AdaBoostClassifier model
+modelAda= AdaBoostClassifier(n_estimators = 2)
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2)
+modelAda.fit(X_train,y_train)
+y_pred = modelAda.predict(X_test)
 getScoreMetrics(y_test=y_test, y_pred=y_pred)
+#endregion
 
-#visualizeCategorical(df=dfNumeric)
 
-print(y_test)
-print(sum(y_test))
+
+#region GradientBoostingClassifier model
+modelGrad= GradientBoostingClassifier(n_estimators = 2)
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2)
+modelGrad.fit(X_train,y_train)
+y_pred = modelGrad.predict(X_test)
+getScoreMetrics(y_test=y_test, y_pred=y_pred)
+#endregion
+
+
+
+
+#region XGBClassifier model
+modelXGB = XGBClassifier(n_estimators = 2)
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2)
+modelXGB.fit(X_train, y_train)
+y_pred = modelXGB.predict(X_test)
+getScoreMetrics(y_test=y_test, y_pred=y_pred)
+#endregion
+
+
+
+from sklearn.ensemble import BaggingClassifier
+model= BaggingClassifier(n_estimators = 200)
+model.fit(X_train,y_train)
+
+
+from sklearn.ensemble import RandomForestClassifier
+model= RandomForestClassifier(n_estimators = 1000)
+model.fit(X_train,y_train)
+
+
+'''
+
+
+
+
+
+
+

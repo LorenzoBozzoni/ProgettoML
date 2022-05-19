@@ -3,7 +3,7 @@ Codifica variabili categoriche
 Correlazione variabili per eliminarne qualcuna
 Eliminare outliers per evitare overfitting --> guardando distribuzione e vedendo quanto sono fuori (dev stan)
 
-
+CLUSTERING TRA FEATURES! --> Visualizzazione
 
 
 FEATURES DA ELIMINARE:
@@ -16,7 +16,8 @@ Cose da fare:
 Statistiche e grafici sui dati
 - plot dei dati, dicendo di che tipologia sono 
 - percentuale valori vuoti
-
+- fare divisione in training e test e poi sottodivisione del training in training vero e validation con kfold cross validation
+- mantenere tutti i risultati delle prestazioni dei modelli in base ai parametri scelti!
 
 Analisi/preparazione dei dati
 - feature selection
@@ -24,20 +25,29 @@ Analisi/preparazione dei dati
 - trovare outliers con deviazione standard ed eliminarli per evitare overfitting --> attenzione che valori statistici molto deviati per colpa di outliers quindi è un po' un cane che si morde la coda
 - codifica valori non rappresentabili --> cosa dicono le diapo?
 - test chi2 e  informazione media mutua
-- feature scaling
+- feature scaling --> necessario farlo prima di PCA (Principal Component Analisys) per la dimensionality reduction
 - divisione in 
 
 Modelli
+Questi non vanno bene per il task di classificazione
 - regressione lineare
 - regressione  polinomiale 
-- decision tree
-- CART
-- ensemble learning --> adaboost, gradient_boosting, XGboost
-- reti neurali
+
+- regressione logistica --> non ha parametri
+- decision tree --> parametri perchè modello parametrico
+- CART --> python?
+- ensemble learning --> 
+    - adaboost -->
+    - gradient_boosting -->
+    - XGboost --> 
+- reti neurali --> epoche e batch 
 
 
 Per ogni modello poi bisogna sistemare gli iperparametri con grid e random search utilizzando le misure di prestazioni viste: precision, accuracy e recall (ragionando su quale abbia più importanza per noi)
-Questo si fa con la k-fold cross-validation
+Questo si fa con la k-fold cross-validation. 
+ESATTO --> per ogni modello, a parte per la regressione logistica, si deve fare la gridsearch randomizzata (e non solo?) 
+e plottare tutti i valori ottenuti facendo il tuning, come qua: https://github.com/justmarkham/scikit-learn-videos/blob/master/08_grid_search.ipynb
+e poi con i valori migliori salvare i valori di precision/accuracy ottenuti.
 
 Comparazione
 
