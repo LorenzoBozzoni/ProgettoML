@@ -1,9 +1,9 @@
 from asyncio.windows_events import NULL
 from cmath import nan
 from math import sqrt
-from turtle import title
-from unittest import TextTestRunner
-from joblib import PrintTime
+import random as rn
+import time
+from matplotlib import projections
 from matplotlib.ft2font import HORIZONTAL
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,15 +14,16 @@ from sklearn import linear_model
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 from sklearn.tree import DecisionTreeClassifier, plot_tree
-from IPython.display import display
 from sklearn.metrics import accuracy_score, mean_squared_error, recall_score, f1_score, confusion_matrix
 import seaborn as sns
 import warnings
-from sklearn.model_selection import cross_val_score, train_test_split, KFold, GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV, cross_val_score, train_test_split, KFold, GridSearchCV
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier
+from sklearn.utils import shuffle
 from xgboost import XGBClassifier
 from sklearn.decomposition import PCA
+from mpl_toolkits.mplot3d import Axes3D
 # not showing warnings in terminal window
 warnings.filterwarnings("ignore")
 
@@ -211,6 +212,11 @@ dfNumeric.to_csv('./out.csv')
 
 '''
 
+rn.seed(time.process_time())
+
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2)
+
+print("Primo:",np.arange(1000,11001,2000),"Secondo:", np.arange(2,8))
 
 
 
@@ -227,35 +233,101 @@ print("Size X_PCA:", X_pca.shape)
 
 # logistic regression has not parameters to be tuned
 reg = linear_model.LogisticRegression(solver="liblinear",class_weight='balanced')
-scores = cross_val_score(reg, X_pca,y, cv=10, scoring="accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
+scores = cross_val_score(reg, X_pca,y, cv=5, scoring="accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
 print(scores.mean())
 
-
+'''
 # indipendente da min_sample_leaf per valori bassi (100-1000), nel range (2000-10000) valore costanti 0.977554
 clf = DecisionTreeClassifier(class_weight='balanced') #min_samples_leaf=5000, max_depth=10
-sample_range = list(np.arange(10000,15001,1000))
+sample_range = list(np.arange(1000,5001,1000)) #15001
 depth_range = list(range(2,8))
 param_grid = dict(min_samples_leaf=sample_range, max_depth=depth_range)    
 print(param_grid)
-grid = GridSearchCV(clf, param_grid=param_grid, cv=10, scoring="accuracy")
+grid = GridSearchCV(clf, param_grid=param_grid, cv=5, scoring="accuracy")    #RandomizedSearchCV , random_state=rn.randint(0,10)
 grid.fit(X_pca,y)
-santocielo = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
-print("DecisionTree:",santocielo)
-#print(grid.best_score_)
-#print(grid.best_params_)
+score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
+print("DecisionTree:",score_df)
+print(grid.best_score_)
+print(grid.best_params_)
+
+
+fig = plt.figure(figsize=(20,20))
+ax = fig.add_subplot(111, projection="3d")
+parameters = str(score_df["params"].values)
+
+print("parameters",parameters)
+
+xy_list = parameters [:-1].split("\n")
+
+x = np.empty(len(xy_list))
+y = np.empty(len(xy_list))
+
+counter = 0
+for element in xy_list:
+    x[counter] = element[:-1].split(", ")[0].split(":")[1]
+    y[counter] = element[:-1].split(", ")[1].split(":")[1]
+    counter += 1
+
+ax.scatter(x, y, score_df["mean_test_score"], edgecolors="green",linewidths=6)
+ax.set_xlabel("max_depth")
+ax.set_ylabel("min_sample_leaf")
+ax.set_zlabel("mean_test_score")
+print("x:",score_df["params"])    # get("max_depth")
+print("y:",type(score_df["params"].values))     # .get("min_sample_leaf")
+print("z:",score_df["mean_test_score"])
+print("colonne",list(score_df.columns))
+plt.show()
+
+'''
+
+
 
 
 
 modelAda = AdaBoostClassifier()   #n_estimators = 2
-estimators_range = list(np.arange(50,76,5))
-learning_rate_range = list(np.arange(4,6,1))
+estimators_range = list(np.arange(5,51,5))
+learning_rate_range = list(np.arange(1,6,1))
 param_grid = dict(n_estimators=estimators_range, learning_rate=learning_rate_range)    
 print(param_grid)
 grid = GridSearchCV(modelAda, param_grid=param_grid, cv=5, scoring="accuracy")
 grid.fit(X_pca,y)
-santocielo = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
-print("AdaBoost:",santocielo)
-#endregion
+score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
+print("AdaBoost:",score_df)
+print(grid.best_score_)
+print(grid.best_params_)
+
+
+fig = plt.figure(figsize=(20,20))
+ax = fig.add_subplot(111, projection="3d")
+parameters = str(score_df["params"].values)
+
+print("parameters",parameters)
+
+xy_list = parameters [:-1].split("\n")
+
+x = np.empty(len(xy_list))
+y = np.empty(len(xy_list))
+
+counter = 0
+for element in xy_list:
+    x[counter] = element[:-1].split(", ")[0].split(":")[1]
+    y[counter] = element[:-1].split(", ")[1].split(":")[1]
+    counter += 1
+
+ax.scatter(x, y, score_df["mean_test_score"], edgecolors="blue",linewidths=6)
+ax.set_xlabel("estimators number")
+ax.set_ylabel("learning rate")
+ax.set_zlabel("mean_test_score")
+print("x:",score_df["params"])    # get("max_depth")
+print("y:",type(score_df["params"].values))     # .get("min_sample_leaf")
+print("z:",score_df["mean_test_score"])
+print("colonne",list(score_df.columns))
+plt.show()
+
+
+
+
+modelGrad= GradientBoostingClassifier(n_estimators = 2, )
 
 
 
@@ -279,10 +351,7 @@ print("AdaBoost:",santocielo)
 
 
 
-
-
-
-
+ 
 
 
 

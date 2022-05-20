@@ -48,6 +48,8 @@ Questo si fa con la k-fold cross-validation.
 ESATTO --> per ogni modello, a parte per la regressione logistica, si deve fare la gridsearch randomizzata (e non solo?) 
 e plottare tutti i valori ottenuti facendo il tuning, come qua: https://github.com/justmarkham/scikit-learn-videos/blob/master/08_grid_search.ipynb
 e poi con i valori migliori salvare i valori di precision/accuracy ottenuti.
+RICORDARSI, DOPO AVER FATTO TEST CON VALIDATION CON KFOLD E BALLE VARIE DI PRENDERE I BEST_PARAMETERS E DI FARE LA VERIFICA SUL TEST SET EFFETTIVO
+
 
 Comparazione
 
