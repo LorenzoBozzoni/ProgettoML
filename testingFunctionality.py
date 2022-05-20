@@ -1,115 +1,93 @@
-def VisualizeData():
-
-    cat_features = []
-    num_features = []
-
-    fig, ax = plt.subplots(6, 6)
-    coordx = 0
-    coordy = 0
-
-    # DATA VISUALIZATION
-    for column in df.columns:
-        # print("coordx", coordx, "coordy", coordy)
-        if coordx == 4 and coordy == 6:
-            break
-        elif coordx == 6:
-            coordx = 0
-            coordy += 1
-
-        frequency = df[column].value_counts(dropna=False)
-
-        # plt.subplot(1, 2, 1)
-        if df[column].nunique() <= 7:
-            cat_features.append(df[column])
-            sns.barplot(
-                x=frequency.index, y=frequency.values, alpha=0.8, ax=ax[coordx, coordy]
-            )
-            coordx += 1
-
-        else:
-            num_features.append(df[column])
-            maxF = max(frequency.values)
-            minF = min(frequency.values)
-            barWidth = (maxF - minF) / 15
-            sns.set_style("whitegrid")
-            sns.distplot(
-                df[column].dropna(),
-                kde=False,
-                color="red",
-                bins=15,
-                ax=ax[coordx, coordy],
-            )
-            coordx += 1
-        # sns.barplot
-        # sns.pointplot
-
-        plt.title("Distribution of values for column " + column)
-        plt.ylabel("Number of Occurrences", fontsize=12)
-        plt.xlabel("Values", fontsize=12)
-
-        """ @deprecated - DIAGRAMMA A TORTA PER VALORI NULLI
-        nnv = 0
-        nv = 0
-        for i in range(0, len(frequency.values)):
-            if not pd.isna(frequency.index.values[i]):
-                nnv += frequency.values[i]
-            else:
-                nv += frequency.values[i]
-
-        pielist = [(nnv / (nnv + nv)), (nv / (nnv + nv))]
-        colors = plt.get_cmap("Blues")(np.linspace(0.4, 0.9, len(pielist)))
-        print(pielist)
-
-        
-        print(
-            "frequency.index of lenght",
-            frequency.index.values.size,
-            " : ",
-            frequency.index.values,
-            " frequency.values: of lenght",
-            frequency.values.size,
-            " : ",
-            frequency.values,
-        )
-        plt.subplot(1, 2, 2)
-        plt.pie(
-            pielist,  # frequency.values,
-            colors=colors,
-            radius=3,
-            center=(4, 4),
-            wedgeprops={"linewidth": 1, "edgecolor": "white"},
-            frame=True,
-        )"""
-
-    plt.show()
+from typing import ChainMap
+from matplotlib import pyplot as plt
+import numpy as np
 
 
-# ------------------------------------------------------------------------------------------------------
+fig = plt.figure()
+ax = fig.add_subplot(111, projection="3d")
+ax.scatter(np.arange(2,8),np.arange(2,8),np.arange(2,8),edgecolors="green",linewidths=6)
+ax.set_xlabel("X label")
+ax.set_ylabel("Y label")
+ax.set_zlabel("Z label")
+plt.show()
 
 
-def visualizeCategorical():
-    counter = 0
 
-    for cat in cat_features:
-        coordx = 0
-        coordy = 0
 
-        frequency = df[cat].value_counts(dropna=False)
 
-        if counter < 9:
-            fig, ax = plt.subplots(3, 3)
-        elif counter == 9:
-            counter = 0
 
-        for i in range(0, 3):
-            for j in range(0, 3):
-                sns.barplot(
-                    x=frequency.index,
-                    y=frequency.values,
-                    alpha=0.8,
-                    ax=ax[coordx, coordy],
-                )
-                coordx += 1
-            coordy += 1
 
-        counter += 1
+
+'''
+
+import numpy as np
+
+parameters = """[{'max_depth': 2, 'min_samples_leaf': 1000}
+ {'max_depth': 2, 'min_samples_leaf': 2000}
+ {'max_depth': 2, 'min_samples_leaf': 3000}
+ {'max_depth': 2, 'min_samples_leaf': 4000}
+ {'max_depth': 2, 'min_samples_leaf': 5000}
+ {'max_depth': 3, 'min_samples_leaf': 1000}
+ {'max_depth': 3, 'min_samples_leaf': 2000}
+ {'max_depth': 3, 'min_samples_leaf': 3000}
+ {'max_depth': 3, 'min_samples_leaf': 4000}
+ {'max_depth': 3, 'min_samples_leaf': 5000}
+ {'max_depth': 4, 'min_samples_leaf': 1000}
+ {'max_depth': 4, 'min_samples_leaf': 2000}
+ {'max_depth': 4, 'min_samples_leaf': 3000}
+ {'max_depth': 4, 'min_samples_leaf': 4000}
+ {'max_depth': 4, 'min_samples_leaf': 5000}
+ {'max_depth': 5, 'min_samples_leaf': 1000}
+ {'max_depth': 5, 'min_samples_leaf': 2000}
+ {'max_depth': 5, 'min_samples_leaf': 3000}
+ {'max_depth': 5, 'min_samples_leaf': 4000}
+ {'max_depth': 5, 'min_samples_leaf': 5000}
+ {'max_depth': 6, 'min_samples_leaf': 1000}
+ {'max_depth': 6, 'min_samples_leaf': 2000}
+ {'max_depth': 6, 'min_samples_leaf': 3000}
+ {'max_depth': 6, 'min_samples_leaf': 4000}
+ {'max_depth': 6, 'min_samples_leaf': 5000}
+ {'max_depth': 7, 'min_samples_leaf': 1000}
+ {'max_depth': 7, 'min_samples_leaf': 2000}
+ {'max_depth': 7, 'min_samples_leaf': 3000}
+ {'max_depth': 7, 'min_samples_leaf': 4000}
+ {'max_depth': 7, 'min_samples_leaf': 5000}]"""
+
+xy_list = parameters [:-1].split("\n")
+
+x = np.empty(len(xy_list))
+y = np.empty(len(xy_list))
+
+counter = 0
+for element in xy_list:
+    x[counter] = element[:-1].split(", ")[0].split(":")[1]
+    y[counter] = element[:-1].split(", ")[1].split(":")[1]
+    counter += 1
+
+print(x)
+print(y)
+
+# {'max_depth': 2, 'min_samples_leaf': 1000}
+#ValueError: could not convert string to float: " 1000}\n {'max_depth'"
+
+'''
+
+
+
+
+
+
+
+
+
+'''
+import plotly.express as px
+df = px.data.iris()
+fig = px.scatter_3d(df, x='sepal_length', y='sepal_width', z='petal_width',
+              color='petal_length', size='petal_length', size_max=18,
+              symbol='species', opacity=0.7)
+
+# tight layout
+fig.update_layout(margin=dict(l=0, r=0, b=0, t=0))
+fig.show
+'''
