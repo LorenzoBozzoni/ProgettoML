@@ -1,6 +1,6 @@
 from asyncio.windows_events import NULL
 from cmath import nan
-from math import sqrt
+from math import floor, sqrt
 import random as rn
 import time
 from matplotlib import projections
@@ -19,7 +19,7 @@ import seaborn as sns
 import warnings
 from sklearn.model_selection import RandomizedSearchCV, cross_val_score, train_test_split, KFold, GridSearchCV
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
-from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier
+from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier,BaggingClassifier
 from sklearn.utils import shuffle
 from xgboost import XGBClassifier
 from sklearn.decomposition import PCA
@@ -49,6 +49,7 @@ def identify_axes(ax_dict, fontsize=48):
     for k, ax in ax_dict.items():
         ax.text(0.5, 0.5, k, transform=ax.transAxes, **kw)
 
+
 def visualizeCategorical(df):
     letters = ["A","B","C","D","E","F","G","H","I","L","M","N","O","P","Q","R","S","T","U","V","X","Y"]
     indexer = -1
@@ -76,6 +77,7 @@ def visualizeCategorical(df):
     fig.show()
     plt.show()
 
+
 def visualizeNumerical(df):
     letters = ["A","B","C","D","E","F","G","H","I","L"]
     indexer = -1
@@ -98,6 +100,7 @@ def visualizeNumerical(df):
 
     fig.show()
     plt.show()
+
 
 def getScoreMetrics(y_test, y_pred):
     acc = accuracy_score(y_test, y_pred)
@@ -150,8 +153,8 @@ dfNumeric = df  # copy of the dataframe, df contains categorical values while df
 for (columnName, columnData) in df.iteritems():
     if columnData.nunique() > 7 and columnName != "Status":
 
-        max_thresold = dfNumeric[columnName].quantile(0.995)
-        min_thresold = dfNumeric[columnName].quantile(0.005)
+        max_thresold = dfNumeric[columnName].quantile(0.80)
+        min_thresold = dfNumeric[columnName].quantile(0.20)
         print("COLONNA CON OUTVALUES", columnName, "MAXPERC",max_thresold, "MINPERC",min_thresold)
         dfNumeric = df[(df[columnName] < max_thresold) & (df[columnName] > min_thresold)]
 #endregion
@@ -187,6 +190,8 @@ plt.show()
 
 
 dfNumeric.fillna(dfNumeric.mean(),inplace=True)
+dfNumeric = dfNumeric.drop(["construction_type","Secured_by","Security_Type"], axis=1)       # feature selection
+
 
 #visualizeNumerical(dfNumeric)
 
@@ -197,13 +202,6 @@ X = dfNumeric.drop(target, axis = 1)
 y = dfNumeric[target]
 
 
-''' obtaining matrices size
-print("ShapeDf",df.shape)
-print("ShapeDfNumeric",dfNumeric.shape)
-
-print("ShapeX",X.shape)
-print("Shapey",y.shape)
-'''
 
 '''  SAVING dfNumeric IN CSV FILE 
 import os  
@@ -211,18 +209,33 @@ os.makedirs('./', exist_ok=True)
 dfNumeric.to_csv('./out.csv') 
 
 '''
-
+# setting random seed for randomsearch for hyperparameters
 rn.seed(time.process_time())
 
-X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2)
+# dividing in training and test set for using kfold cross validation in training set in order to find best parameters 
+# not using default split function because it returns matrices and vector, and we want instead dataframe 
+X_train = X[1:floor(X.shape[0] * 0.8)]
+X_test = X[floor((X.shape[0] * 0.8) + 1):]
+y_train =  y[1:floor(len(y) * 0.8)]
+y_test = y[floor((len(y) * 0.8) + 1):]
 
-print("Primo:",np.arange(1000,11001,2000),"Secondo:", np.arange(2,8))
 
+# obtaining matrices size
+print("ShapeDf",df.shape)
+print("ShapeDfNumeric",dfNumeric.shape)
+print("ShapeX",X.shape)
+print("Shapey",y.shape)
+print("ShapeX_train",X_train.shape)
+print("ShapeX_test",X_test.shape)
+print("ShapeXìy_train",y_train.shape)
+print("Shapey_test",y_test.shape)
+
+print("Full X_train", X_train, "type: ", type(X_train))
 
 
 # feature scaling
 scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+X_scaled = scaler.fit_transform(X_train)
 print("Size X_scaled:", X_scaled.shape)
 
 # dimensionality reduction
@@ -231,12 +244,26 @@ X_pca = pca.fit_transform(X_scaled)
 print("Size X_PCA:", X_pca.shape)
 
 
+
+
+ 
+
+v_param_index = 0
+
+best_parameters = [[0,0,0],[0,0,0],[0,0,0]]
+
+
+
+#region LogisticRegression
 # logistic regression has not parameters to be tuned
 reg = linear_model.LogisticRegression(solver="liblinear",class_weight='balanced')
-scores = cross_val_score(reg, X_pca,y, cv=5, scoring="accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
+scores = cross_val_score(reg, X_pca,y_train, cv=5, scoring="accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
 print(scores.mean())
+#endregion
+
 
 '''
+#region DecisionTreeClassifier
 # indipendente da min_sample_leaf per valori bassi (100-1000), nel range (2000-10000) valore costanti 0.977554
 clf = DecisionTreeClassifier(class_weight='balanced') #min_samples_leaf=5000, max_depth=10
 sample_range = list(np.arange(1000,5001,1000)) #15001
@@ -244,7 +271,7 @@ depth_range = list(range(2,8))
 param_grid = dict(min_samples_leaf=sample_range, max_depth=depth_range)    
 print(param_grid)
 grid = GridSearchCV(clf, param_grid=param_grid, cv=5, scoring="accuracy")    #RandomizedSearchCV , random_state=rn.randint(0,10)
-grid.fit(X_pca,y)
+grid.fit(X_pca,y_train)
 score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
 print("DecisionTree:",score_df)
 print(grid.best_score_)
@@ -269,6 +296,7 @@ for element in xy_list:
     counter += 1
 
 ax.scatter(x, y, score_df["mean_test_score"], edgecolors="green",linewidths=6)
+ax.set_title('Decision Tree Classifier')
 ax.set_xlabel("max_depth")
 ax.set_ylabel("min_sample_leaf")
 ax.set_zlabel("mean_test_score")
@@ -277,20 +305,30 @@ print("y:",type(score_df["params"].values))     # .get("min_sample_leaf")
 print("z:",score_df["mean_test_score"])
 print("colonne",list(score_df.columns))
 plt.show()
+best_parameters[v_param_index][0] = "DecisionTreeClassifier"
+best_parameters[v_param_index][1] = grid.best_params_ 
+best_parameters[v_param_index][2] = grid.best_score_
+#endregion
 
-'''
+
+
+
+
+v_param_index += 1
 
 
 
 
 
+
+#region AdaBoostClassifier
 modelAda = AdaBoostClassifier()   #n_estimators = 2
-estimators_range = list(np.arange(5,51,5))
-learning_rate_range = list(np.arange(1,6,1))
+estimators_range = list(np.arange(1,16,2))
+learning_rate_range = list(np.arange(0.1,2.1,0.1))
 param_grid = dict(n_estimators=estimators_range, learning_rate=learning_rate_range)    
 print(param_grid)
 grid = GridSearchCV(modelAda, param_grid=param_grid, cv=5, scoring="accuracy")
-grid.fit(X_pca,y)
+grid.fit(X_pca,y_train)
 score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
 print("AdaBoost:",score_df)
 print(grid.best_score_)
@@ -315,6 +353,60 @@ for element in xy_list:
     counter += 1
 
 ax.scatter(x, y, score_df["mean_test_score"], edgecolors="blue",linewidths=6)
+ax.set_title('adaboost classifier score')
+ax.set_xlabel("estimators number")
+ax.set_ylabel("learning rate")
+ax.set_zlabel("mean_test_score")
+print("x:",score_df["params"])    # get("max_depth")
+print("y:",type(score_df["params"].values))     # .get("min_sample_leaf")
+print("z:",score_df["mean_test_score"])
+print("colonne",list(score_df.columns))
+plt.show()
+
+best_parameters[v_param_index][0] = "AdaBoostClassifier"
+best_parameters[v_param_index][1] = grid.best_params_ 
+best_parameters[v_param_index][2] = grid.best_score_
+#endregion
+
+
+
+v_param_index += 1
+
+
+
+#region GradientBoostingClassifier
+modelGrad= GradientBoostingClassifier()
+estimators_range = list(np.arange(1,16,2))
+learning_rate_range = list(np.arange(0.1,2.1,0.1))
+param_grid = dict(n_estimators=estimators_range, learning_rate=learning_rate_range)    
+print(param_grid)
+grid = GridSearchCV(modelGrad, param_grid=param_grid, cv=5, scoring="accuracy")
+grid.fit(X_pca,y_train)
+score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
+print("GradientBoosting:",score_df)
+print(grid.best_score_)
+print(grid.best_params_)
+
+
+fig = plt.figure(figsize=(20,20))
+ax = fig.add_subplot(111, projection="3d")
+parameters = str(score_df["params"].values)
+
+print("parameters",parameters)
+
+xy_list = parameters [:-1].split("\n")
+
+x = np.empty(len(xy_list))
+y = np.empty(len(xy_list))
+
+counter = 0
+for element in xy_list:
+    x[counter] = element[:-1].split(", ")[0].split(":")[1]
+    y[counter] = element[:-1].split(", ")[1].split(":")[1]
+    counter += 1
+
+ax.scatter(x, y, score_df["mean_test_score"], edgecolors="red",linewidths=6)
+ax.set_title('gradient boosting score')
 ax.set_xlabel("estimators number")
 ax.set_ylabel("learning rate")
 ax.set_zlabel("mean_test_score")
@@ -325,13 +417,93 @@ print("colonne",list(score_df.columns))
 plt.show()
 
 
+best_parameters[v_param_index][0] = "GradientBoostingClassifier"
+best_parameters[v_param_index][1] = grid.best_params_ 
+best_parameters[v_param_index][2] = grid.best_score_
+#endregion
 
 
-modelGrad= GradientBoostingClassifier(n_estimators = 2, )
+'''
 
 
 
 
+#region BaggingClassifier
+modelBagging = BaggingClassifier(base_estimator=reg)
+estimators_range = list(np.arange(1,16,2))
+bootstrap_range = list([True,False])
+param_grid = dict(n_estimators=estimators_range, bootstrap=bootstrap_range)    
+print(param_grid)
+grid = GridSearchCV(modelBagging, param_grid=param_grid, cv=5, scoring="accuracy")
+grid.fit(X_pca,y_train)
+score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
+print("BaggingClassifier:",score_df)
+print(grid.best_score_)
+print(grid.best_params_)
+
+
+fig = plt.figure(figsize=(20,20))
+ax = fig.add_subplot(111, projection="3d")
+parameters = str(score_df["params"].values)
+
+print("parameters",parameters)
+
+xy_list = parameters [:-1].split("\n")
+
+x = [None] * (len(xy_list))
+y = np.empty(len(xy_list))
+
+counter = 0
+for element in xy_list:
+    x[counter] = element[:-1].split(", ")[0].split(":")[1][1:]
+    y[counter] = element[:-1].split(", ")[1].split(":")[1]
+    counter += 1
+
+print("x prima",x)
+for i in range(0,len(x)): 
+    if x[i] == "False":
+        x[i] = 0
+    else:
+        x[i] = 1 
+    i += 1 
+
+print("x dopo",x)
+ax.scatter(x, y, score_df["mean_test_score"], edgecolors="red",linewidths=6)
+ax.set_title('boosting classifier score')
+ax.set_xlabel("bootstrap")
+ax.set_ylabel("estimators number")
+ax.set_zlabel("mean_test_score")
+print("x:",score_df["params"])    # get("max_depth")
+print("y:",type(score_df["params"].values))     # .get("min_sample_leaf")
+print("z:",score_df["mean_test_score"])
+print("colonne",list(score_df.columns))
+plt.show()
+
+
+best_parameters[v_param_index][0] = "GradientBoostingClassifier"
+best_parameters[v_param_index][1] = grid.best_params_ 
+best_parameters[v_param_index][2] = grid.best_score_
+#endregion
+
+
+
+
+
+print(best_parameters)
+
+'''
+overall_score = []
+for element in best_parameters:
+    if element[0] == "AdaBoostClassifier":
+        
+        ada = AdaBoostClassifier(learning_rate=element[1].get("learning_rate"))
+        ada.fit(X_test)
+        y_pred = ada.predict(y_test)
+
+        #e qui ci mettiamo una bella confusion matrix
+
+
+'''
 
 
 
