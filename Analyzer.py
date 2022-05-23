@@ -71,6 +71,7 @@ def visualizeCategorical(df):
         if df[columnName].nunique() <= 7:
             times = df[columnName].value_counts()
             axd[letters[indexer]].bar(times.index, times.values)
+            axd[letters[indexer]].set_title(columnName)
             indexer += 1
     
     #identify_axes(axd)
@@ -96,6 +97,7 @@ def visualizeNumerical(df):
         if df[columnName].nunique() > 7:
             times = df[columnName].value_counts()
             axd[letters[indexer]].hist(df[columnName],bins="auto")
+            axd[letters[indexer]].set_title(columnName)           
             indexer += 1
 
     fig.show()
@@ -423,14 +425,14 @@ best_parameters[v_param_index][2] = grid.best_score_
 #endregion
 
 
+
+
+
 '''
-
-
-
 
 #region BaggingClassifier
 modelBagging = BaggingClassifier(base_estimator=reg)
-estimators_range = list(np.arange(1,16,2))
+estimators_range = list(np.arange(1,30,2))
 bootstrap_range = list([True,False])
 param_grid = dict(n_estimators=estimators_range, bootstrap=bootstrap_range)    
 print(param_grid)
@@ -488,10 +490,13 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 
 
-
 print(best_parameters)
 
-'''
+
+
+
+
+''' Parte successiva da implementare
 overall_score = []
 for element in best_parameters:
     if element[0] == "AdaBoostClassifier":
@@ -532,110 +537,6 @@ for element in best_parameters:
 
 
 '''
-# dividing values in train and test part
-X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.3)
-
-kf =KFold(n_splits=10, random_state=None, shuffle=False) #initialize KFold
-for train_index, validation_index in kf.split(X):
-    print("TRAIN:", train_index, "VALIDATION:", validation_index)
-    X_train = X.iloc[train_index]
-    X_validation = X.iloc[validation_index]
-    y_train= y[train_index]
-    y_validation = y[validation_index]
-
-
-
-#region linear regression model
-regr = linear_model.LinearRegression()  # creating a linear model object
-regr.fit(X_train, y_train)
-y_pred_regr = regr.predict(X_test)
-print('Mean square error: %.2f' % mean_squared_error(y_test, y_pred_regr))
-#endregion
-
-
-
-#region building a logistic regression model
-logreg = linear_model.LogisticRegression(solver="liblinear",class_weight='balanced')
-logreg.fit(X_train, y_train)
-y_pred_logreg = logreg.predict(X_test)
-print(logreg.score(X_test,y_test))
-# visualize model score (for classification tasks)
-getScoreMetrics(y_test=y_test, y_pred=y_pred_logreg)
-#endregion
-
-
-
-#region building a decision tree classifier model
-clf = DecisionTreeClassifier(max_depth=10, class_weight='balanced',min_samples_leaf=5000)   
-clf.fit(X_train, y_train)
-y_pred_clf = clf.predict(X_test)
-getScoreMetrics(y_test=y_test, y_pred=y_pred_clf)
-plot_tree(clf, filled=True)
-plt.show()
-# another visualization for decision tree classifier
-viz = dtreeviz(clf, X, y,target_name="Status",feature_names=dfNumeric.columns)
-viz.view()
-#endregion
-
-
-
-#region polynomial linear regression
-poly = PolynomialFeatures(degree=1)
-X_poly= poly.fit_transform(X)
-X_train, X_test, y_train, y_test = train_test_split(X_poly, y, test_size=0.33)
-# Create linear regression object
-regr = linear_model.Ridge(alpha=5.)#LinearRegression()
-# Train the model using the training sets
-regr.fit(X_train, y_train)
-# Make predictions using the testing set
-y_pred = regr.predict(X_test)
-y_train_pred = regr.predict(X_train)
-# The mean squared error
-#print('Mean squared error on train: %.2f'% mean_squared_error(y_test, y_pred))
-rmse_train = sqrt(mean_squared_error(y_train, y_train_pred))
-print('Mean squared error on train: %.2f'% mean_squared_error(y_train, y_train_pred))
-# The mean squared error
-print('Mean squared error on test: %.2f'% mean_squared_error(y_test, y_pred))
-rmse_test = sqrt(mean_squared_error(y_test, y_pred))
-#endregion
-
-
-
-#region AdaBoostClassifier model
-modelAda= AdaBoostClassifier(n_estimators = 2)
-X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2)
-modelAda.fit(X_train,y_train)
-y_pred = modelAda.predict(X_test)
-getScoreMetrics(y_test=y_test, y_pred=y_pred)
-#endregion
-
-
-
-#region GradientBoostingClassifier model
-modelGrad= GradientBoostingClassifier(n_estimators = 2)
-X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2)
-modelGrad.fit(X_train,y_train)
-y_pred = modelGrad.predict(X_test)
-getScoreMetrics(y_test=y_test, y_pred=y_pred)
-#endregion
-
-
-
-
-#region XGBClassifier model
-modelXGB = XGBClassifier(n_estimators = 2)
-X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2)
-modelXGB.fit(X_train, y_train)
-y_pred = modelXGB.predict(X_test)
-getScoreMetrics(y_test=y_test, y_pred=y_pred)
-#endregion
-
-
-
-from sklearn.ensemble import BaggingClassifier
-model= BaggingClassifier(n_estimators = 200)
-model.fit(X_train,y_train)
-
 
 from sklearn.ensemble import RandomForestClassifier
 model= RandomForestClassifier(n_estimators = 1000)
