@@ -229,7 +229,7 @@ print("ShapeX",X.shape)
 print("Shapey",y.shape)
 print("ShapeX_train",X_train.shape)
 print("ShapeX_test",X_test.shape)
-print("ShapeXìy_train",y_train.shape)
+print("Shapey_train",y_train.shape)
 print("Shapey_test",y_test.shape)
 
 print("Full X_train", X_train, "type: ", type(X_train))
@@ -432,7 +432,7 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 #region BaggingClassifier
 modelBagging = BaggingClassifier(base_estimator=reg)
-estimators_range = list(np.arange(1,30,2))
+estimators_range = list(np.arange(1,30,5))
 bootstrap_range = list([True,False])
 param_grid = dict(n_estimators=estimators_range, bootstrap=bootstrap_range)    
 print(param_grid)
@@ -482,7 +482,7 @@ print("colonne",list(score_df.columns))
 plt.show()
 
 
-best_parameters[v_param_index][0] = "GradientBoostingClassifier"
+best_parameters[v_param_index][0] = "BaggingClassifier"
 best_parameters[v_param_index][1] = grid.best_params_ 
 best_parameters[v_param_index][2] = grid.best_score_
 #endregion
@@ -496,19 +496,28 @@ print(best_parameters)
 
 
 
-''' Parte successiva da implementare
+# Parte successiva da implementare
 overall_score = []
 for element in best_parameters:
     if element[0] == "AdaBoostClassifier":
         
         ada = AdaBoostClassifier(learning_rate=element[1].get("learning_rate"))
-        ada.fit(X_test)
+        ada.fit(X_train, y_train)
         y_pred = ada.predict(y_test)
 
         #e qui ci mettiamo una bella confusion matrix
+        
+        getScoreMetrics(y_test=y_test, y_pred=y_pred)
+    
+    elif element[0] == "BaggingClassifier":
+        bag = BaggingClassifier(base_estimator=reg,n_estimators=element[1].get("n_estimators"),bootstrap=element[1].get("bootstrap"))
+        #y_train = y_train.reshape(-1,1)
+        bag.fit(X_train, y_train)
+        y_pred = bag.predict(y_test)
+
+        getScoreMetrics(y_test=y_test, y_pred=y_pred)
 
 
-'''
 
 
 
