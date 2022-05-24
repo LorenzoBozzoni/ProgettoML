@@ -137,8 +137,8 @@ cat_features = []
 num_features = []
 
 
-#visualizeCategorical(df=df)
-#visualizeNumerical(df=df)
+visualizeCategorical(df=df)
+visualizeNumerical(df=df)
 
 # questa riga sotto è corretta ma usa uno spatasso di RAM
 # sns.heatmap(df.isnull(), yticklabels=False, cbar=False, cmap="viridis", robust=True)
@@ -252,7 +252,7 @@ print("Size X_PCA:", X_pca.shape)
 
 v_param_index = 0
 
-best_parameters = [[0,0,0],[0,0,0],[0,0,0]]
+best_parameters = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
 
 
 
@@ -263,8 +263,8 @@ scores = cross_val_score(reg, X_pca,y_train, cv=5, scoring="accuracy")          
 print(scores.mean())
 #endregion
 
-
 '''
+
 #region DecisionTreeClassifier
 # indipendente da min_sample_leaf per valori bassi (100-1000), nel range (2000-10000) valore costanti 0.977554
 clf = DecisionTreeClassifier(class_weight='balanced') #min_samples_leaf=5000, max_depth=10
@@ -312,13 +312,10 @@ best_parameters[v_param_index][1] = grid.best_params_
 best_parameters[v_param_index][2] = grid.best_score_
 #endregion
 
-
-
+'''
 
 
 v_param_index += 1
-
-
 
 
 
@@ -426,13 +423,13 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 
 
+v_param_index += 1
 
 
-'''
 
 #region BaggingClassifier
 modelBagging = BaggingClassifier(base_estimator=reg)
-estimators_range = list(np.arange(1,30,5))
+estimators_range = list(np.arange(1,30,2))
 bootstrap_range = list([True,False])
 param_grid = dict(n_estimators=estimators_range, bootstrap=bootstrap_range)    
 print(param_grid)
@@ -490,10 +487,8 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 
 
+
 print(best_parameters)
-
-
-
 
 
 # Parte successiva da implementare
@@ -503,25 +498,37 @@ for element in best_parameters:
         
         ada = AdaBoostClassifier(learning_rate=element[1].get("learning_rate"))
         ada.fit(X_train, y_train)
-        y_pred = ada.predict(y_test)
-
-        #e qui ci mettiamo una bella confusion matrix
-        
+        y_pred = ada.predict(X_test)
+        print("---------------------------------------- ADABOOST CLASSIFIER ----------------------------------------")
         getScoreMetrics(y_test=y_test, y_pred=y_pred)
     
     elif element[0] == "BaggingClassifier":
         bag = BaggingClassifier(base_estimator=reg,n_estimators=element[1].get("n_estimators"),bootstrap=element[1].get("bootstrap"))
-        #y_train = y_train.reshape(-1,1)
         bag.fit(X_train, y_train)
-        y_pred = bag.predict(y_test)
-
+        y_pred = bag.predict(X_test)
+        print("---------------------------------------- BAGGING CLASSIFIER ----------------------------------------")
+        getScoreMetrics(y_test=y_test, y_pred=y_pred)
+    
+    elif element[0] == "GradientBoostingClassifier":
+        grad = GradientBoostingClassifier(n_estimators=element[1].get("n_estimators"),learning_rate=element[1].get("learning_rate"))
+        grad.fit(X_train, y_train)
+        y_pred = bag.predict(X_test)
+        print("---------------------------------------- GRADIENT BOOSTING CLASSIFIER ----------------------------------------")
+        getScoreMetrics(y_test=y_test, y_pred=y_pred)
+    
+    elif element[0] == "DecisionTreeClassifier":
+        grad = DecisionTreeClassifier(n_estimators=element[1].get("min_sample_leaf"),learning_rate=element[1].get("max_depth"))
+        grad.fit(X_train, y_train)
+        y_pred = bag.predict(X_test)
+        print("---------------------------------------- DECISION TREE CLASSIFIER ----------------------------------------")
         getScoreMetrics(y_test=y_test, y_pred=y_pred)
 
 
 
-
-
-
+reg.fit(X_train, y_train)
+y_pred = reg.predict(X_test)
+print("---------------------------------------- LOGISTIC REGRESSION ----------------------------------------")
+getScoreMetrics(y_test=y_test, y_pred=y_pred)
 
 
 
