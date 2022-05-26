@@ -512,14 +512,14 @@ for element in best_parameters:
     elif element[0] == "GradientBoostingClassifier":
         grad = GradientBoostingClassifier(n_estimators=element[1].get("n_estimators"),learning_rate=element[1].get("learning_rate"))
         grad.fit(X_train, y_train)
-        y_pred = bag.predict(X_test)
+        y_pred = grad.predict(X_test)
         print("---------------------------------------- GRADIENT BOOSTING CLASSIFIER ----------------------------------------")
         getScoreMetrics(y_test=y_test, y_pred=y_pred)
     
     elif element[0] == "DecisionTreeClassifier":
-        grad = DecisionTreeClassifier(n_estimators=element[1].get("min_sample_leaf"),learning_rate=element[1].get("max_depth"))
-        grad.fit(X_train, y_train)
-        y_pred = bag.predict(X_test)
+        dec = DecisionTreeClassifier(n_estimators=element[1].get("min_sample_leaf"),learning_rate=element[1].get("max_depth"))
+        dec.fit(X_train, y_train)
+        y_pred = dec.predict(X_test)
         print("---------------------------------------- DECISION TREE CLASSIFIER ----------------------------------------")
         getScoreMetrics(y_test=y_test, y_pred=y_pred)
 
