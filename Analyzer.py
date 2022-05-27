@@ -548,10 +548,10 @@ getScoreMetrics(y_test=y_test, y_pred=y_pred)
 
 
 # development
-model = models.Sequential()
+'''model = models.Sequential()
 model.add(layers.Dense(64, activation="relu", input_shape=(X_train.shape[1],)))
 model.add(layers.Dense(48, activation="relu"))
-model.add(layers.Dense(1, activation="sigmoid"))
+model.add(layers.Dense(1, activation="sigmoid"))'''
 
 
 
