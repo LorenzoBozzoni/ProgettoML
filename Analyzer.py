@@ -11,6 +11,8 @@ import numpy as np
 from dtreeviz.trees import dtreeviz # remember to load the package
 from mpl_toolkits import mplot3d
 from sklearn import linear_model
+import sklearn
+from sklearn import feature_selection
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 from sklearn.tree import DecisionTreeClassifier, plot_tree
@@ -137,8 +139,8 @@ cat_features = []
 num_features = []
 
 
-visualizeCategorical(df=df)
-visualizeNumerical(df=df)
+#visualizeCategorical(df=df)
+#visualizeNumerical(df=df)
 
 # questa riga sotto è corretta ma usa uno spatasso di RAM
 # sns.heatmap(df.isnull(), yticklabels=False, cbar=False, cmap="viridis", robust=True)
@@ -235,6 +237,17 @@ print("Shapey_test",y_test.shape)
 print("Full X_train", X_train, "type: ", type(X_train))
 
 
+
+print("Mutual information test results:")
+print(feature_selection.mutual_info_classif(X=X,y=y))
+tmp_df = dfNumeric
+tmp_df.drop("Status", axis=1, inplace=True)
+plt.plot(tmp_df.columns,feature_selection.mutual_info_classif(X=X,y=y))
+plt.xticks(rotation=45, ha='right')
+print(tmp_df.columns)
+plt.show()
+
+
 # feature scaling
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X_train)
@@ -247,7 +260,7 @@ print("Size X_PCA:", X_pca.shape)
 
 
 
-
+'''
  
 
 v_param_index = 0
@@ -263,7 +276,6 @@ scores = cross_val_score(reg, X_pca,y_train, cv=5, scoring="accuracy")          
 print(scores.mean())
 #endregion
 
-'''
 
 #region DecisionTreeClassifier
 # indipendente da min_sample_leaf per valori bassi (100-1000), nel range (2000-10000) valore costanti 0.977554
@@ -312,7 +324,7 @@ best_parameters[v_param_index][1] = grid.best_params_
 best_parameters[v_param_index][2] = grid.best_score_
 #endregion
 
-'''
+
 
 
 v_param_index += 1
@@ -488,6 +500,11 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 
 
+
+
+
+
+
 print(best_parameters)
 
 
@@ -534,7 +551,7 @@ getScoreMetrics(y_test=y_test, y_pred=y_pred)
 
 
 
-
+'''
 
 
 
