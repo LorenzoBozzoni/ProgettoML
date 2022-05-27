@@ -263,7 +263,7 @@ scores = cross_val_score(reg, X_pca,y_train, cv=5, scoring="accuracy")          
 print(scores.mean())
 #endregion
 
-'''
+
 
 #region DecisionTreeClassifier
 # indipendente da min_sample_leaf per valori bassi (100-1000), nel range (2000-10000) valore costanti 0.977554
@@ -312,13 +312,13 @@ best_parameters[v_param_index][1] = grid.best_params_
 best_parameters[v_param_index][2] = grid.best_score_
 #endregion
 
-'''
+
 
 
 v_param_index += 1
 
 
-
+'''
 
 #region AdaBoostClassifier
 modelAda = AdaBoostClassifier()   #n_estimators = 2
@@ -421,7 +421,7 @@ best_parameters[v_param_index][1] = grid.best_params_
 best_parameters[v_param_index][2] = grid.best_score_
 #endregion
 
-
+'''
 
 v_param_index += 1
 
@@ -491,6 +491,14 @@ best_parameters[v_param_index][2] = grid.best_score_
 print(best_parameters)
 
 
+
+
+
+
+
+
+
+
 # Parte successiva da implementare
 overall_score = []
 for element in best_parameters:
@@ -517,7 +525,7 @@ for element in best_parameters:
         getScoreMetrics(y_test=y_test, y_pred=y_pred)
     
     elif element[0] == "DecisionTreeClassifier":
-        dec = DecisionTreeClassifier(n_estimators=element[1].get("min_sample_leaf"),learning_rate=element[1].get("max_depth"))
+        dec = DecisionTreeClassifier(min_samples_leaf=element[1].get("min_samples_leaf"),max_depth=element[1].get("max_depth"))
         dec.fit(X_train, y_train)
         y_pred = dec.predict(X_test)
         print("---------------------------------------- DECISION TREE CLASSIFIER ----------------------------------------")
@@ -536,6 +544,14 @@ getScoreMetrics(y_test=y_test, y_pred=y_pred)
 
 
 
+
+
+
+# development
+model = models.Sequential()
+model.add(layers.Dense(64, activation="relu", input_shape=(X_train.shape[1],)))
+model.add(layers.Dense(48, activation="relu"))
+model.add(layers.Dense(1, activation="sigmoid"))
 
 
 
