@@ -1,4 +1,4 @@
-from typing import ChainMap
+'''from typing import ChainMap
 from matplotlib import pyplot as plt
 import numpy as np
 
@@ -11,7 +11,7 @@ ax.set_ylabel("Y label")
 ax.set_zlabel("Z label")
 plt.savefig("test.pdf")
 plt.show()
-
+'''
 
 
 
@@ -153,3 +153,17 @@ for element in best_parameters:
 
 
 '''
+
+
+import pandas as pd
+
+column_names = ["EpochNumber", "BatchSize", "Precision","Loss"]
+dfToScatter = pd.DataFrame(columns = column_names)
+e_element = 10
+b_element = 10
+test_pr = 10
+test_loss = 10
+dfToAppend = pd.DataFrame([[e_element, b_element, test_pr, test_loss]]  , columns=column_names)
+dfToScatter = dfToScatter.append(dfToAppend)
+print(dfToAppend)
+print(dfToScatter)

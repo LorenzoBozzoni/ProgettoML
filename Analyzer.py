@@ -1,4 +1,5 @@
 from asyncio.windows_events import NULL
+from calendar import EPOCH
 from cmath import nan
 from math import floor, sqrt
 import random as rn
@@ -11,19 +12,25 @@ import numpy as np
 from dtreeviz.trees import dtreeviz # remember to load the package
 from mpl_toolkits import mplot3d
 from sklearn import linear_model
+import sklearn
+from sklearn import metrics
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.metrics import accuracy_score, mean_squared_error, recall_score, f1_score, confusion_matrix
 import seaborn as sns
 import warnings
-from sklearn.model_selection import RandomizedSearchCV, cross_val_score, train_test_split, KFold, GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold, cross_val_score, train_test_split, KFold, GridSearchCV
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier,BaggingClassifier
+from keras.callbacks import EarlyStopping
 from sklearn.utils import shuffle
 from xgboost import XGBClassifier
 from sklearn.decomposition import PCA
 from mpl_toolkits.mplot3d import Axes3D
+import tensorflow as tf
+from tensorflow.keras import models
+from tensorflow.keras import layers
 # not showing warnings in terminal window
 warnings.filterwarnings("ignore")
 
@@ -137,8 +144,8 @@ cat_features = []
 num_features = []
 
 
-visualizeCategorical(df=df)
-visualizeNumerical(df=df)
+#visualizeCategorical(df=df)
+#visualizeNumerical(df=df)
 
 # questa riga sotto è corretta ma usa uno spatasso di RAM
 # sns.heatmap(df.isnull(), yticklabels=False, cbar=False, cmap="viridis", robust=True)
@@ -253,13 +260,13 @@ print("Size X_PCA:", X_pca.shape)
 v_param_index = 0
 
 best_parameters = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
-
+skf = StratifiedKFold(n_splits=5)
 
 
 #region LogisticRegression
 # logistic regression has not parameters to be tuned
 reg = linear_model.LogisticRegression(solver="liblinear",class_weight='balanced')
-scores = cross_val_score(reg, X_pca,y_train, cv=5, scoring="accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
+scores = cross_val_score(reg, X_pca,y_train, cv=skf, scoring="accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
 print(scores.mean())
 #endregion
 
@@ -272,7 +279,7 @@ sample_range = list(np.arange(1000,5001,1000)) #15001
 depth_range = list(range(2,8))
 param_grid = dict(min_samples_leaf=sample_range, max_depth=depth_range)    
 print(param_grid)
-grid = GridSearchCV(clf, param_grid=param_grid, cv=5, scoring="accuracy")    #RandomizedSearchCV , random_state=rn.randint(0,10)
+grid = GridSearchCV(clf, param_grid=param_grid, cv=skf, scoring="accuracy")    #RandomizedSearchCV , random_state=rn.randint(0,10)
 grid.fit(X_pca,y_train)
 score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
 print("DecisionTree:",score_df)
@@ -318,7 +325,7 @@ best_parameters[v_param_index][2] = grid.best_score_
 v_param_index += 1
 
 
-'''
+
 
 #region AdaBoostClassifier
 modelAda = AdaBoostClassifier()   #n_estimators = 2
@@ -326,7 +333,7 @@ estimators_range = list(np.arange(1,16,2))
 learning_rate_range = list(np.arange(0.1,2.1,0.1))
 param_grid = dict(n_estimators=estimators_range, learning_rate=learning_rate_range)    
 print(param_grid)
-grid = GridSearchCV(modelAda, param_grid=param_grid, cv=5, scoring="accuracy")
+grid = GridSearchCV(modelAda, param_grid=param_grid, cv=skf, scoring="accuracy")
 grid.fit(X_pca,y_train)
 score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
 print("AdaBoost:",score_df)
@@ -379,7 +386,7 @@ estimators_range = list(np.arange(1,16,2))
 learning_rate_range = list(np.arange(0.1,2.1,0.1))
 param_grid = dict(n_estimators=estimators_range, learning_rate=learning_rate_range)    
 print(param_grid)
-grid = GridSearchCV(modelGrad, param_grid=param_grid, cv=5, scoring="accuracy")
+grid = GridSearchCV(modelGrad, param_grid=param_grid, cv=skf, scoring="accuracy")
 grid.fit(X_pca,y_train)
 score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
 print("GradientBoosting:",score_df)
@@ -421,7 +428,7 @@ best_parameters[v_param_index][1] = grid.best_params_
 best_parameters[v_param_index][2] = grid.best_score_
 #endregion
 
-'''
+
 
 v_param_index += 1
 
@@ -433,7 +440,7 @@ estimators_range = list(np.arange(1,30,2))
 bootstrap_range = list([True,False])
 param_grid = dict(n_estimators=estimators_range, bootstrap=bootstrap_range)    
 print(param_grid)
-grid = GridSearchCV(modelBagging, param_grid=param_grid, cv=5, scoring="accuracy")
+grid = GridSearchCV(modelBagging, param_grid=param_grid, cv=skf, scoring="accuracy")
 grid.fit(X_pca,y_train)
 score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
 print("BaggingClassifier:",score_df)
@@ -548,20 +555,113 @@ getScoreMetrics(y_test=y_test, y_pred=y_pred)
 
 
 # development
-'''model = models.Sequential()
-model.add(layers.Dense(64, activation="relu", input_shape=(X_train.shape[1],)))
-model.add(layers.Dense(48, activation="relu"))
-model.add(layers.Dense(1, activation="sigmoid"))'''
+model = models.Sequential()
+model.add(layers.Dense(60, activation="relu", input_shape=(X_train.shape[1],)))
+model.add(layers.Dense(15, activation="relu"))
+model.add(layers.Dense(1, activation="sigmoid"))
+
+model.compile(
+    loss="binary_crossentropy", optimizer="adam", metrics=['accuracy']
+)
+
+#es = EarlyStopping(monitor='val_loss', mode='min', verbose=1)
+# ten numbers with equal distance from 0 to 50 (5,10,15,20,...)
+EPOCH_NUMBER = np.linspace(1, 21, 5)    #5
+# ten numbers with equal distance from 0 to 50 (5,10,15,20,...)
+BATCH_SIZE = np.linspace(100, 50, 4) #4
 
 
+#print('BATCH_SIZE',BATCH_SIZE,'EPOCH_NUMBER',EPOCH_NUMBER)
+
+'''
+EPOCH_NUMBER = 100
+BATCH_SIZE = 1000
+# Fit the model to the training data and record events into a History object.
+history = model.fit(X_train,y_train,epochs=EPOCH_NUMBER,batch_size=BATCH_SIZE,validation_split=0.2,verbose=1) #,callbacks=[es],batch_size=BATCH_SIZE
+# Model evaluation
+test_loss, test_pr = model.evaluate(X_test, y_test)
+print(test_pr)
+
+# Plot loss (y axis) and epochs (x axis) for training set and validation set
+plt.figure()
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.plot(history.epoch, np.array(history.history["accuracy"]) * 100, label="Train accuracy")
+plt.plot(history.epoch, np.array(history.history["val_accuracy"]) * 100, label="Val accuracy")
+plt.plot(history.epoch, np.array(history.history["loss"]), label="Train lost")
+plt.plot(history.epoch, np.array(history.history["val_loss"]), label="Val lost")
+plt.legend()
+plt.show()
+
+'''
+column_names = ["EpochNumber", "BatchSize", "Precision","Loss"]
+dfToScatter = pd.DataFrame(columns = column_names)
+
+for e_element in EPOCH_NUMBER:
+    for b_element in BATCH_SIZE:
+        # Fit the model to the training data and record events into a History object.
+        history = model.fit(
+            X_train,
+            y_train,
+            epochs=int(e_element),
+            batch_size=int(b_element),
+            validation_split=0.2,
+            verbose=1,
+        )
+        # Model evaluation
+        test_loss, test_pr = model.evaluate(X_test, y_test)
+        print(test_pr)
+
+        dfToAppend = pd.DataFrame([[e_element, b_element, test_pr, test_loss]]  , columns=column_names)
+        dfToScatter = dfToScatter.append(dfToAppend)
+        dfToAppend = dfToAppend[0:0]
+
+fig = plt.figure(figsize=(20,20))
+ax = fig.add_subplot(111, projection="3d")
+ax.scatter(dfToScatter["EpochNumber"], dfToScatter["BatchSize"], dfToScatter["Precision"], edgecolors="red",linewidths=6)
+ax.set_title('Precision')
+ax.set_xlabel("Epoch number")
+ax.set_ylabel("Batch size")
+ax.set_zlabel("Precision")
+print("x:",dfToScatter["EpochNumber"])   
+print("y:",dfToScatter["BatchSize"])    
+print("z:",dfToScatter["Precision"])
+print("colonne",list(dfToScatter.columns))
 
 
+ax2 = fig.add_subplot(121, projection="3d")
+ax2.scatter(dfToScatter["EpochNumber"], dfToScatter["BatchSize"], dfToScatter["Loss"], edgecolors="red",linewidths=6)
+ax2.set_title('Precision')
+ax2.set_xlabel("Epoch number")
+ax2.set_ylabel("Batch size")
+ax2.set_zlabel("Loss")
+print("x:",dfToScatter["EpochNumber"])   
+print("y:",dfToScatter["BatchSize"])    
+print("z:",dfToScatter["Precision"])
+plt.show()
+
+print(dfToScatter)
 
 
+import os  
+os.makedirs('./', exist_ok=True)  
+dfToScatter.to_csv('./out.csv') 
 
 
  
+'''
+        # Plot loss (y axis) and epochs (x axis) for training set and validation set
+        # plt.figure()
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
 
+        plt.plot(history.epoch, np.array(history.history["loss"]), label="Train loss")
+        plt.plot(history.epoch, np.array(history.history["val_loss"]), label="Val loss")
+        plt.plot(history.epoch, np.array(history.history["accuracy"]) * 100, label="Train accuracy")
+        plt.plot(history.epoch, np.array(history.history["val_accuracy"]) * 100, label="Val accuracy")
+        plt.legend()
+    plt.show()
+'''
 
 
 
