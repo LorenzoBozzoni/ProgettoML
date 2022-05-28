@@ -223,11 +223,16 @@ rn.seed(time.process_time())
 
 # dividing in training and test set for using kfold cross validation in training set in order to find best parameters 
 # not using default split function because it returns matrices and vector, and we want instead dataframe 
-X_train = X[1:floor(X.shape[0] * 0.8)]
+'''X_train = X[1:floor(X.shape[0] * 0.8)]
 X_test = X[floor((X.shape[0] * 0.8) + 1):]
 y_train =  y[1:floor(len(y) * 0.8)]
-y_test = y[floor((len(y) * 0.8) + 1):]
+y_test = y[floor((len(y) * 0.8) + 1):]'''
 
+X_train_v, X_test_v, y_train_v, y_test_v = train_test_split(X,y, test_size=0.20, stratify=y)
+X_train = pd.DataFrame(X_train_v, columns=X.columns)
+X_test = pd.DataFrame(X_test_v, columns=X.columns)
+y_train = pd.DataFrame(y_train_v, columns=["Status"])
+y_test = pd.DataFrame(y_test_v, columns=["Status"])
 
 # obtaining matrices size
 print("ShapeDf",df.shape)
@@ -375,7 +380,7 @@ best_parameters[v_param_index][2] = grid.best_score_
 #endregion
 
 
-
+'''
 v_param_index += 1
 
 
@@ -428,7 +433,7 @@ best_parameters[v_param_index][1] = grid.best_params_
 best_parameters[v_param_index][2] = grid.best_score_
 #endregion
 
-
+'''
 
 v_param_index += 1
 
