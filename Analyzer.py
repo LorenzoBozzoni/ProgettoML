@@ -16,8 +16,9 @@ import sklearn
 from sklearn import metrics
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
+from sklearn.manifold import TSNE
 from sklearn.tree import DecisionTreeClassifier, plot_tree
-from sklearn.metrics import accuracy_score, mean_squared_error, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, mean_squared_error, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
 import seaborn as sns
 import warnings
 from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold, cross_val_score, train_test_split, KFold, GridSearchCV
@@ -111,19 +112,29 @@ def visualizeNumerical(df):
     plt.show()
 
 
-def getScoreMetrics(y_test, y_pred):
+def getScoreMetrics(y_test, y_pred, modelName):
     acc = accuracy_score(y_test, y_pred)
-    print("\nAccuracy: ", acc)
     rec = recall_score(y_test, y_pred)
-    print("Recall: ", rec)
     f1score = 2 / ((1 / acc) + (1 / rec))
+    f1scoreman =  f1_score(y_test, y_pred)
+
+    print("\nAccuracy: ", acc)
+    print("Recall: ", rec)
     print("f1 score calculated manually: ", f1score)
-    print("f1 score calculated automatically: ", f1_score(y_test, y_pred))
+    print("f1 score calculated automatically: ", f1scoreman)
 
     m = confusion_matrix(
         y_test, y_pred, labels=[0, 1]
     )  # labels ti permette di specificare quale label (target output) considerare nella confusion matrix
     print(m)
+
+    disp = ConfusionMatrixDisplay(confusion_matrix=m, display_labels=[0, 1])
+    disp.plot()
+    plt.title("Confusion matrix for " + modelName)
+    plt.show()
+
+    return [acc, rec, f1score, f1scoreman, modelName]
+    
 #endregion
 
 
@@ -162,8 +173,8 @@ dfNumeric = df  # copy of the dataframe, df contains categorical values while df
 for (columnName, columnData) in df.iteritems():
     if columnData.nunique() > 7 and columnName != "Status":
 
-        max_thresold = dfNumeric[columnName].quantile(0.80)
-        min_thresold = dfNumeric[columnName].quantile(0.20)
+        max_thresold = dfNumeric[columnName].quantile(0.95)
+        min_thresold = dfNumeric[columnName].quantile(0.05)
         print("COLONNA CON OUTVALUES", columnName, "MAXPERC",max_thresold, "MINPERC",min_thresold)
         dfNumeric = df[(df[columnName] < max_thresold) & (df[columnName] > min_thresold)]
 #endregion
@@ -257,10 +268,73 @@ pca = PCA(0.95)
 X_pca = pca.fit_transform(X_scaled)
 print("Size X_PCA:", X_pca.shape)
 
+import os  
+os.makedirs('./', exist_ok=True)  
+dfA = pd.DataFrame(X_pca) 
+dfA.to_csv('./out.csv') 
 
 
 
- 
+
+
+'''
+N = 10000
+
+tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+tsne_results = tsne.fit_transform(data_subset)
+
+rndperm = np.random.permutation(dfNumeric.shape[0])
+df_subset = df.loc[rndperm[:N],:].copy()
+df_subset['tsne-2d-one'] = tsne_results[:,0]
+df_subset['tsne-2d-two'] = tsne_results[:,1]
+plt.figure(figsize=(16,10))
+sns.scatterplot(
+    x="tsne-2d-one", y="tsne-2d-two",
+    hue="y",
+    palette=sns.color_palette("hls", 10),
+    data=df_subset,
+    legend="full",
+    alpha=0.3
+)
+
+plt.figure(figsize=(16,7))
+ax1 = plt.subplot(1, 2, 1)
+sns.scatterplot(
+    x="pca-one", y="pca-two",
+    hue="y",
+    palette=sns.color_palette("hls", 10),
+    data=df_subset,
+    legend="full",
+    alpha=0.3,
+    ax=ax1
+)
+ax2 = plt.subplot(1, 2, 2)
+sns.scatterplot(
+    x="tsne-2d-one", y="tsne-2d-two",
+    hue="y",
+    palette=sns.color_palette("hls", 10),
+    data=df_subset,
+    legend="full",
+    alpha=0.3,
+    ax=ax2
+)
+ '''
+
+
+
+'''bestfeatures = SelectKBest(score_func=chi2, k=27)
+fit = bestfeatures.fit(X.abs,y)
+dfscores = pd.DataFrame(fit.scores_)
+dfcolumns = pd.DataFrame(X.columns)
+#concat two dataframes for better visualization
+featureScores = pd.concat([dfcolumns,dfscores],axis=1)
+featureScores.columns = ['Specs','Score'] #naming the dataframe columns
+print(featureScores)'''
+
+
+
+
+
 
 v_param_index = 0
 
@@ -329,7 +403,7 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 v_param_index += 1
 
-
+'''
 
 
 #region AdaBoostClassifier
@@ -380,7 +454,7 @@ best_parameters[v_param_index][2] = grid.best_score_
 #endregion
 
 
-'''
+
 v_param_index += 1
 
 
@@ -433,7 +507,7 @@ best_parameters[v_param_index][1] = grid.best_params_
 best_parameters[v_param_index][2] = grid.best_score_
 #endregion
 
-'''
+
 
 v_param_index += 1
 
@@ -506,13 +580,13 @@ print(best_parameters)
 
 
 
-
+'''
 
 
 
 
 # Parte successiva da implementare
-overall_score = []
+overall_score = [[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"]]
 for element in best_parameters:
     if element[0] == "AdaBoostClassifier":
         
@@ -520,40 +594,43 @@ for element in best_parameters:
         ada.fit(X_train, y_train)
         y_pred = ada.predict(X_test)
         print("---------------------------------------- ADABOOST CLASSIFIER ----------------------------------------")
-        getScoreMetrics(y_test=y_test, y_pred=y_pred)
+        overall_score[0] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="AdaBoostClassifier")
     
     elif element[0] == "BaggingClassifier":
         bag = BaggingClassifier(base_estimator=reg,n_estimators=element[1].get("n_estimators"),bootstrap=element[1].get("bootstrap"))
         bag.fit(X_train, y_train)
         y_pred = bag.predict(X_test)
         print("---------------------------------------- BAGGING CLASSIFIER ----------------------------------------")
-        getScoreMetrics(y_test=y_test, y_pred=y_pred)
+        overall_score[1] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="BaggingClassifier")
     
     elif element[0] == "GradientBoostingClassifier":
         grad = GradientBoostingClassifier(n_estimators=element[1].get("n_estimators"),learning_rate=element[1].get("learning_rate"))
         grad.fit(X_train, y_train)
         y_pred = grad.predict(X_test)
         print("---------------------------------------- GRADIENT BOOSTING CLASSIFIER ----------------------------------------")
-        getScoreMetrics(y_test=y_test, y_pred=y_pred)
+        overall_score[2] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="GradientBoostingClassifier")
     
     elif element[0] == "DecisionTreeClassifier":
         dec = DecisionTreeClassifier(min_samples_leaf=element[1].get("min_samples_leaf"),max_depth=element[1].get("max_depth"))
         dec.fit(X_train, y_train)
         y_pred = dec.predict(X_test)
         print("---------------------------------------- DECISION TREE CLASSIFIER ----------------------------------------")
-        getScoreMetrics(y_test=y_test, y_pred=y_pred)
+        overall_score[3] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="DecisionTreeClassifier")
 
 
 
 reg.fit(X_train, y_train)
 y_pred = reg.predict(X_test)
 print("---------------------------------------- LOGISTIC REGRESSION ----------------------------------------")
-getScoreMetrics(y_test=y_test, y_pred=y_pred)
+overall_score[4] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="LogisticRegression")
 
 
-
-
-
+tempNames = [overall_score[0][4],overall_score[1][4],overall_score[2][4],overall_score[3][4],overall_score[4][4]]
+print(overall_score)
+for i in range(0,4):
+        tempValues = [overall_score[0][i],overall_score[1][i],overall_score[2][i],overall_score[3][i]]
+        plt.bar(tempValues, tempNames , "rd")
+        plt.show()
 
 
 
@@ -571,7 +648,7 @@ model.compile(
 
 #es = EarlyStopping(monitor='val_loss', mode='min', verbose=1)
 # ten numbers with equal distance from 0 to 50 (5,10,15,20,...)
-EPOCH_NUMBER = np.linspace(1, 21, 5)    #5
+EPOCH_NUMBER = np.linspace(1, 12, 5)    #5
 # ten numbers with equal distance from 0 to 50 (5,10,15,20,...)
 BATCH_SIZE = np.linspace(100, 50, 4) #4
 
@@ -621,8 +698,8 @@ for e_element in EPOCH_NUMBER:
         dfToScatter = dfToScatter.append(dfToAppend)
         dfToAppend = dfToAppend[0:0]
 
-fig = plt.figure(figsize=(20,20))
-ax = fig.add_subplot(111, projection="3d")
+fig = plt.figure(figsize=(30,15))
+ax = fig.add_subplot(121, projection="3d")
 ax.scatter(dfToScatter["EpochNumber"], dfToScatter["BatchSize"], dfToScatter["Precision"], edgecolors="red",linewidths=6)
 ax.set_title('Precision')
 ax.set_xlabel("Epoch number")
@@ -634,7 +711,7 @@ print("z:",dfToScatter["Precision"])
 print("colonne",list(dfToScatter.columns))
 
 
-ax2 = fig.add_subplot(121, projection="3d")
+ax2 = fig.add_subplot(122, projection="3d")
 ax2.scatter(dfToScatter["EpochNumber"], dfToScatter["BatchSize"], dfToScatter["Loss"], edgecolors="red",linewidths=6)
 ax2.set_title('Precision')
 ax2.set_xlabel("Epoch number")
@@ -648,9 +725,10 @@ plt.show()
 print(dfToScatter)
 
 
-import os  
-os.makedirs('./', exist_ok=True)  
-dfToScatter.to_csv('./out.csv') 
+
+
+
+
 
 
  
@@ -681,6 +759,8 @@ model.fit(X_train,y_train)
 
 
 '''
+
+
 
 
 

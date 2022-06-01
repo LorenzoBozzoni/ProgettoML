@@ -11,10 +11,10 @@ ax.set_ylabel("Y label")
 ax.set_zlabel("Z label")
 plt.savefig("test.pdf")
 plt.show()
+
+
+
 '''
-
-
-
 
 
 
@@ -155,6 +155,13 @@ for element in best_parameters:
 '''
 
 
+
+
+
+
+
+
+'''
 import pandas as pd
 
 column_names = ["EpochNumber", "BatchSize", "Precision","Loss"]
@@ -166,4 +173,17 @@ test_loss = 10
 dfToAppend = pd.DataFrame([[e_element, b_element, test_pr, test_loss]]  , columns=column_names)
 dfToScatter = dfToScatter.append(dfToAppend)
 print(dfToAppend)
-print(dfToScatter)
+print(dfToScatter)'''
+
+
+
+
+
+
+
+
+overall_score = [[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4]]
+#for i in overall_score:
+    #print(i[2])
+#print(overall_score)
+print(overall_score[1][2])
