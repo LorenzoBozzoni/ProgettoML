@@ -333,7 +333,7 @@ print(scores.mean())
 # indipendente da min_sample_leaf per valori bassi (100-1000), nel range (2000-10000) valore costanti 0.977554
 clf = DecisionTreeClassifier(class_weight='balanced') #min_samples_leaf=5000, max_depth=10
 sample_range = list(np.arange(1000,5001,1000)) #15001
-depth_range = list(range(2,8))
+depth_range = list(range(2,10))
 param_grid = dict(min_samples_leaf=sample_range, max_depth=depth_range)    
 print(param_grid)
 grid = GridSearchCV(clf, param_grid=param_grid, cv=skf, scoring="balanced_accuracy", verbose=3)    #RandomizedSearchCV , random_state=rn.randint(0,10)
@@ -385,8 +385,8 @@ v_param_index += 1
 
 #region AdaBoostClassifier
 modelAda = AdaBoostClassifier()   #n_estimators = 2
-estimators_range = list(np.arange(1,20,2))    #list(np.arange(1,16,2))
-learning_rate_range = list(np.arange(0.1,4.1,0.5))      #list(np.arange(0.1,4.1,0.8))
+estimators_range = list(np.arange(1,21,2))    #list(np.arange(1,16,2))
+learning_rate_range = list(np.arange(0.1,4.1,0.25))      #list(np.arange(0.1,4.1,0.8))
 param_grid = dict(n_estimators=estimators_range, learning_rate=learning_rate_range)    
 print(param_grid)
 grid = GridSearchCV(modelAda, param_grid=param_grid, cv=skf, scoring="balanced_accuracy", verbose=3)
@@ -438,8 +438,8 @@ v_param_index += 1
 
 #region GradientBoostingClassifier
 modelGrad= GradientBoostingClassifier()
-estimators_range = list(np.arange(1,19,2))      #list(np.arange(90,101,10)) questo è quello modificato
-learning_rate_range = list(np.arange(0.1,5,1))      #list(np.arange(0.1,2.1,0.1)) questo è quello corretto per il plot
+estimators_range = list(np.arange(1,25,2))      #list(np.arange(90,101,10)) questo è quello modificato
+learning_rate_range = list(np.arange(0.1,5,0.5))      #list(np.arange(0.1,2.1,0.1)) questo è quello corretto per il plot
 param_grid = dict(n_estimators=estimators_range, learning_rate=learning_rate_range)    
 print(param_grid)
 grid = GridSearchCV(modelGrad, param_grid=param_grid, cv=skf, scoring="balanced_accuracy", verbose=3)
@@ -489,7 +489,7 @@ v_param_index += 1
 
 #region BaggingClassifier
 modelBagging = BaggingClassifier(base_estimator=reg)
-estimators_range = list(np.arange(1,30,2))
+estimators_range = list(np.arange(1,30,1))
 bootstrap_range = list([True,False])
 param_grid = dict(n_estimators=estimators_range, bootstrap=bootstrap_range)    
 print(param_grid)
@@ -615,7 +615,7 @@ model.compile(
 
 #es = EarlyStopping(monitor='val_loss', mode='min', verbose=1)
 # ten numbers with equal distance from 0 to 50 (5,10,15,20,...)
-EPOCH_NUMBER = np.linspace(1, 12, 5)    #5
+EPOCH_NUMBER = np.linspace(1, 12, 7)    #5
 # ten numbers with equal distance from 0 to 50 (5,10,15,20,...)
 BATCH_SIZE = np.linspace(100, 50, 4) #4
 
