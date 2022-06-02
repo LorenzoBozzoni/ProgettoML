@@ -18,7 +18,7 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 from sklearn.manifold import TSNE
 from sklearn.tree import DecisionTreeClassifier, plot_tree
-from sklearn.metrics import accuracy_score, mean_squared_error, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, mean_squared_error, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
 import seaborn as sns
 import warnings
 from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold, cross_val_score, train_test_split, KFold, GridSearchCV
@@ -40,23 +40,6 @@ warnings.filterwarnings("ignore")
 # 22 FEATURES CATEGORICHE
 
 #region functions
-def identify_axes(ax_dict, fontsize=48):
-    """
-    Helper to identify the Axes in the examples below.
-
-    Draws the label in a large font in the center of the Axes.
-
-    Parameters
-    ----------
-    ax_dict : dict[str, Axes]
-        Mapping between the title / label and the Axes.
-    fontsize : int, optional
-        How big the label should be.
-    """
-    kw = dict(ha="center", va="center", fontsize=fontsize, color="darkgrey")
-    for k, ax in ax_dict.items():
-        ax.text(0.5, 0.5, k, transform=ax.transAxes, **kw)
-
 
 def visualizeCategorical(df):
     letters = ["A","B","C","D","E","F","G","H","I","L","M","N","O","P","Q","R","S","T","U","V","X","Y"]
@@ -82,7 +65,6 @@ def visualizeCategorical(df):
             axd[letters[indexer]].set_title(columnName)
             indexer += 1
     
-    #identify_axes(axd)
     fig.show()
     plt.show()
 
@@ -113,19 +95,17 @@ def visualizeNumerical(df):
 
 
 def getScoreMetrics(y_test, y_pred, modelName):
-    acc = accuracy_score(y_test, y_pred)
+    acc = balanced_accuracy_score(y_test, y_pred)
     rec = recall_score(y_test, y_pred)
-    f1score = 2 / ((1 / acc) + (1 / rec))
-    f1scoreman =  f1_score(y_test, y_pred)
+    f1score =  f1_score(y_test, y_pred)
+    f1scoreman = 2 / ((1 / acc) + (1 / rec))
 
     print("\nAccuracy: ", acc)
     print("Recall: ", rec)
     print("f1 score calculated manually: ", f1score)
     print("f1 score calculated automatically: ", f1scoreman)
 
-    m = confusion_matrix(
-        y_test, y_pred, labels=[0, 1]
-    )  # labels ti permette di specificare quale label (target output) considerare nella confusion matrix
+    m = confusion_matrix(y_test, y_pred, labels=[0, 1])  # labels ti permette di specificare quale label (target output) considerare nella confusion matrix
     print(m)
 
     disp = ConfusionMatrixDisplay(confusion_matrix=m, display_labels=[0, 1])
@@ -159,7 +139,8 @@ num_features = []
 #visualizeNumerical(df=df)
 
 # questa riga sotto è corretta ma usa uno spatasso di RAM
-# sns.heatmap(df.isnull(), yticklabels=False, cbar=False, cmap="viridis", robust=True)
+#sns.heatmap(df.isnull(), yticklabels=False, cbar=False, cmap="viridis", robust=True)
+#plt.show()
 
 # vediamo la presenza di valori nulli nelle features con maggior numero
 """sns.heatmap(df[["age", "Interest_rate_spread", "rate_of_interest"]].isnull(), cmap="viridis")
@@ -198,18 +179,21 @@ for (columnName, columnData) in df.iteritems():
 
 
 # plotting correlation grid for all features (used for null values management)
-fig, ax = plt.subplots(figsize=(32, 32))
-ax = sns.heatmap(dfNumeric.corr(), vmin=-1, vmax=1, cmap="YlGnBu")  # non prende le features categoriche. Per avere i valori: "annot=True"
-plt.show()
+#fig, ax = plt.subplots(figsize=(32, 32))
+#ax = sns.heatmap(dfNumeric.corr(), vmin=-1, vmax=1, cmap="YlGnBu")  # non prende le features categoriche. Per avere i valori: "annot=True"
+#plt.show()
 
 
-#visualizeNumerical(dfNumeric)     # visualize numeric feature's histograms after removing outliers
+# visualize numeric feature's histograms after removing outliers
+#visualizeNumerical(dfNumeric)     
 
 #print(dfNumeric.corr())
 #print(dfNumeric.isnull().sum())
 
-
+# replacing null values with the mean of the respective feature
 dfNumeric.fillna(dfNumeric.mean(),inplace=True)
+
+# removing features with no statistical contribution 
 dfNumeric = dfNumeric.drop(["construction_type","Secured_by","Security_Type"], axis=1)       # feature selection
 
 
@@ -217,7 +201,7 @@ dfNumeric = dfNumeric.drop(["construction_type","Secured_by","Security_Type"], a
 
 
 
-
+# dividing training features from target 
 X = dfNumeric.drop(target, axis = 1)
 y = dfNumeric[target]
 
@@ -233,13 +217,9 @@ dfNumeric.to_csv('./out.csv')
 rn.seed(time.process_time())
 
 # dividing in training and test set for using kfold cross validation in training set in order to find best parameters 
-# not using default split function because it returns matrices and vector, and we want instead dataframe 
-'''X_train = X[1:floor(X.shape[0] * 0.8)]
-X_test = X[floor((X.shape[0] * 0.8) + 1):]
-y_train =  y[1:floor(len(y) * 0.8)]
-y_test = y[floor((len(y) * 0.8) + 1):]'''
-
 X_train_v, X_test_v, y_train_v, y_test_v = train_test_split(X,y, test_size=0.20, stratify=y)
+
+# convert the matrices into dataframes for using methods
 X_train = pd.DataFrame(X_train_v, columns=X.columns)
 X_test = pd.DataFrame(X_test_v, columns=X.columns)
 y_train = pd.DataFrame(y_train_v, columns=["Status"])
@@ -254,7 +234,6 @@ print("ShapeX_train",X_train.shape)
 print("ShapeX_test",X_test.shape)
 print("Shapey_train",y_train.shape)
 print("Shapey_test",y_test.shape)
-
 print("Full X_train", X_train, "type: ", type(X_train))
 
 
@@ -337,7 +316,6 @@ print(featureScores)'''
 
 
 v_param_index = 0
-
 best_parameters = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
 skf = StratifiedKFold(n_splits=5)
 
@@ -345,7 +323,7 @@ skf = StratifiedKFold(n_splits=5)
 #region LogisticRegression
 # logistic regression has not parameters to be tuned
 reg = linear_model.LogisticRegression(solver="liblinear",class_weight='balanced')
-scores = cross_val_score(reg, X_pca,y_train, cv=skf, scoring="accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
+scores = cross_val_score(reg, X_pca,y_train, cv=skf, scoring="balanced_accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
 print(scores.mean())
 #endregion
 
@@ -358,7 +336,7 @@ sample_range = list(np.arange(1000,5001,1000)) #15001
 depth_range = list(range(2,8))
 param_grid = dict(min_samples_leaf=sample_range, max_depth=depth_range)    
 print(param_grid)
-grid = GridSearchCV(clf, param_grid=param_grid, cv=skf, scoring="accuracy")    #RandomizedSearchCV , random_state=rn.randint(0,10)
+grid = GridSearchCV(clf, param_grid=param_grid, cv=skf, scoring="balanced_accuracy", verbose=3)    #RandomizedSearchCV , random_state=rn.randint(0,10)
 grid.fit(X_pca,y_train)
 score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
 print("DecisionTree:",score_df)
@@ -389,9 +367,9 @@ ax.set_xlabel("max_depth")
 ax.set_ylabel("min_sample_leaf")
 ax.set_zlabel("mean_test_score")
 print("x:",score_df["params"])    # get("max_depth")
-print("y:",type(score_df["params"].values))     # .get("min_sample_leaf")
+print("y:",score_df["params"])     # .get("min_sample_leaf")
 print("z:",score_df["mean_test_score"])
-print("colonne",list(score_df.columns))
+print("columns name",list(score_df.columns))
 plt.show()
 best_parameters[v_param_index][0] = "DecisionTreeClassifier"
 best_parameters[v_param_index][1] = grid.best_params_ 
@@ -400,19 +378,18 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 
 
-
 v_param_index += 1
 
-'''
+
 
 
 #region AdaBoostClassifier
 modelAda = AdaBoostClassifier()   #n_estimators = 2
-estimators_range = list(np.arange(1,16,2))
-learning_rate_range = list(np.arange(0.1,2.1,0.1))
+estimators_range = list(np.arange(1,20,2))    #list(np.arange(1,16,2))
+learning_rate_range = list(np.arange(0.1,4.1,0.5))      #list(np.arange(0.1,4.1,0.8))
 param_grid = dict(n_estimators=estimators_range, learning_rate=learning_rate_range)    
 print(param_grid)
-grid = GridSearchCV(modelAda, param_grid=param_grid, cv=skf, scoring="accuracy")
+grid = GridSearchCV(modelAda, param_grid=param_grid, cv=skf, scoring="balanced_accuracy", verbose=3)
 grid.fit(X_pca,y_train)
 score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
 print("AdaBoost:",score_df)
@@ -442,12 +419,11 @@ ax.set_title('adaboost classifier score')
 ax.set_xlabel("estimators number")
 ax.set_ylabel("learning rate")
 ax.set_zlabel("mean_test_score")
-print("x:",score_df["params"])    # get("max_depth")
-print("y:",type(score_df["params"].values))     # .get("min_sample_leaf")
+print("x:",score_df["params"])    
+print("y:",score_df["params"])     
 print("z:",score_df["mean_test_score"])
 print("colonne",list(score_df.columns))
 plt.show()
-
 best_parameters[v_param_index][0] = "AdaBoostClassifier"
 best_parameters[v_param_index][1] = grid.best_params_ 
 best_parameters[v_param_index][2] = grid.best_score_
@@ -459,19 +435,19 @@ v_param_index += 1
 
 
 
+
 #region GradientBoostingClassifier
 modelGrad= GradientBoostingClassifier()
-estimators_range = list(np.arange(1,16,2))
-learning_rate_range = list(np.arange(0.1,2.1,0.1))
+estimators_range = list(np.arange(1,19,2))      #list(np.arange(90,101,10)) questo è quello modificato
+learning_rate_range = list(np.arange(0.1,5,1))      #list(np.arange(0.1,2.1,0.1)) questo è quello corretto per il plot
 param_grid = dict(n_estimators=estimators_range, learning_rate=learning_rate_range)    
 print(param_grid)
-grid = GridSearchCV(modelGrad, param_grid=param_grid, cv=skf, scoring="accuracy")
+grid = GridSearchCV(modelGrad, param_grid=param_grid, cv=skf, scoring="balanced_accuracy", verbose=3)
 grid.fit(X_pca,y_train)
 score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
 print("GradientBoosting:",score_df)
 print(grid.best_score_)
 print(grid.best_params_)
-
 
 fig = plt.figure(figsize=(20,20))
 ax = fig.add_subplot(111, projection="3d")
@@ -495,13 +471,11 @@ ax.set_title('gradient boosting score')
 ax.set_xlabel("estimators number")
 ax.set_ylabel("learning rate")
 ax.set_zlabel("mean_test_score")
-print("x:",score_df["params"])    # get("max_depth")
-print("y:",type(score_df["params"].values))     # .get("min_sample_leaf")
+print("x:",score_df["params"])    
+print("y:",score_df["params"])     
 print("z:",score_df["mean_test_score"])
 print("colonne",list(score_df.columns))
 plt.show()
-
-
 best_parameters[v_param_index][0] = "GradientBoostingClassifier"
 best_parameters[v_param_index][1] = grid.best_params_ 
 best_parameters[v_param_index][2] = grid.best_score_
@@ -519,22 +493,18 @@ estimators_range = list(np.arange(1,30,2))
 bootstrap_range = list([True,False])
 param_grid = dict(n_estimators=estimators_range, bootstrap=bootstrap_range)    
 print(param_grid)
-grid = GridSearchCV(modelBagging, param_grid=param_grid, cv=skf, scoring="accuracy")
+grid = GridSearchCV(modelBagging, param_grid=param_grid, cv=skf, scoring="balanced_accuracy", verbose=3)
 grid.fit(X_pca,y_train)
 score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
 print("BaggingClassifier:",score_df)
 print(grid.best_score_)
 print(grid.best_params_)
 
-
 fig = plt.figure(figsize=(20,20))
 ax = fig.add_subplot(111, projection="3d")
 parameters = str(score_df["params"].values)
-
 print("parameters",parameters)
-
 xy_list = parameters [:-1].split("\n")
-
 x = [None] * (len(xy_list))
 y = np.empty(len(xy_list))
 
@@ -544,7 +514,7 @@ for element in xy_list:
     y[counter] = element[:-1].split(", ")[1].split(":")[1]
     counter += 1
 
-print("x prima",x)
+# converting boolean values to numerical, for visualization
 for i in range(0,len(x)): 
     if x[i] == "False":
         x[i] = 0
@@ -552,19 +522,16 @@ for i in range(0,len(x)):
         x[i] = 1 
     i += 1 
 
-print("x dopo",x)
 ax.scatter(x, y, score_df["mean_test_score"], edgecolors="red",linewidths=6)
 ax.set_title('boosting classifier score')
 ax.set_xlabel("bootstrap")
 ax.set_ylabel("estimators number")
 ax.set_zlabel("mean_test_score")
-print("x:",score_df["params"])    # get("max_depth")
-print("y:",type(score_df["params"].values))     # .get("min_sample_leaf")
+print("x:",score_df["params"])    
+print("y:",score_df["params"])     
 print("z:",score_df["mean_test_score"])
 print("colonne",list(score_df.columns))
 plt.show()
-
-
 best_parameters[v_param_index][0] = "BaggingClassifier"
 best_parameters[v_param_index][1] = grid.best_params_ 
 best_parameters[v_param_index][2] = grid.best_score_
@@ -574,13 +541,13 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 
 
-print(best_parameters)
+print("best_parameters for used models: ", best_parameters)
 
 
 
 
 
-'''
+
 
 
 
@@ -628,8 +595,8 @@ overall_score[4] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="Logi
 tempNames = [overall_score[0][4],overall_score[1][4],overall_score[2][4],overall_score[3][4],overall_score[4][4]]
 print(overall_score)
 for i in range(0,4):
-        tempValues = [overall_score[0][i],overall_score[1][i],overall_score[2][i],overall_score[3][i]]
-        plt.bar(tempValues, tempNames , "rd")
+        tempValues = [overall_score[0][i],overall_score[1][i],overall_score[2][i],overall_score[3][i], overall_score[4][i]]
+        plt.bar(tempNames, tempValues)
         plt.show()
 
 
@@ -643,7 +610,7 @@ model.add(layers.Dense(15, activation="relu"))
 model.add(layers.Dense(1, activation="sigmoid"))
 
 model.compile(
-    loss="binary_crossentropy", optimizer="adam", metrics=['accuracy']
+    loss="binary_crossentropy", optimizer="adam", metrics=['BinaryAccuracy']
 )
 
 #es = EarlyStopping(monitor='val_loss', mode='min', verbose=1)

@@ -182,8 +182,15 @@ print(dfToScatter)'''
 
 
 
+import numpy as np
+
+
 overall_score = [[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4]]
 #for i in overall_score:
     #print(i[2])
 #print(overall_score)
 print(overall_score[1][2])
+
+
+
+print(list(np.arange(0.1,4.1,0.8)))
