@@ -14,7 +14,7 @@ from mpl_toolkits import mplot3d
 from sklearn import linear_model
 import sklearn
 from sklearn import metrics
-from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from sklearn.feature_selection import chi2
 from sklearn.manifold import TSNE
 from sklearn.tree import DecisionTreeClassifier, plot_tree
@@ -154,8 +154,8 @@ dfNumeric = df  # copy of the dataframe, df contains categorical values while df
 for (columnName, columnData) in df.iteritems():
     if columnData.nunique() > 7 and columnName != "Status":
 
-        max_thresold = dfNumeric[columnName].quantile(0.95)
-        min_thresold = dfNumeric[columnName].quantile(0.05)
+        max_thresold = dfNumeric[columnName].quantile(0.995)
+        min_thresold = dfNumeric[columnName].quantile(0.005)
         print("COLONNA CON OUTVALUES", columnName, "MAXPERC",max_thresold, "MINPERC",min_thresold)
         dfNumeric = df[(df[columnName] < max_thresold) & (df[columnName] > min_thresold)]
 #endregion
@@ -217,6 +217,7 @@ dfNumeric.to_csv('./out.csv')
 rn.seed(time.process_time())
 
 # dividing in training and test set for using kfold cross validation in training set in order to find best parameters 
+
 X_train_v, X_test_v, y_train_v, y_test_v = train_test_split(X,y, test_size=0.20, stratify=y)
 
 # convert the matrices into dataframes for using methods
@@ -234,7 +235,7 @@ print("ShapeX_train",X_train.shape)
 print("ShapeX_test",X_test.shape)
 print("Shapey_train",y_train.shape)
 print("Shapey_test",y_test.shape)
-print("Full X_train", X_train, "type: ", type(X_train))
+#print("Full X_train", X_train, "type: ", type(X_train))
 
 
 # feature scaling
@@ -243,7 +244,7 @@ X_scaled = scaler.fit_transform(X_train)
 print("Size X_scaled:", X_scaled.shape)
 
 # dimensionality reduction
-pca = PCA(0.95)
+pca = PCA(0.20)
 X_pca = pca.fit_transform(X_scaled)
 print("Size X_PCA:", X_pca.shape)
 
@@ -301,15 +302,15 @@ sns.scatterplot(
 
 
 
-'''bestfeatures = SelectKBest(score_func=chi2, k=27)
-fit = bestfeatures.fit(X.abs,y)
+bestfeatures = SelectKBest(score_func=mutual_info_classif, k=10)
+fit = bestfeatures.fit(X,y)
 dfscores = pd.DataFrame(fit.scores_)
 dfcolumns = pd.DataFrame(X.columns)
 #concat two dataframes for better visualization
 featureScores = pd.concat([dfcolumns,dfscores],axis=1)
 featureScores.columns = ['Specs','Score'] #naming the dataframe columns
-print(featureScores)'''
-
+print(featureScores)
+print(bestfeatures.fit_transform(X,y))
 
 
 
@@ -317,7 +318,7 @@ print(featureScores)'''
 
 v_param_index = 0
 best_parameters = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
-skf = StratifiedKFold(n_splits=5)
+skf = StratifiedKFold(n_splits=10)
 
 
 #region LogisticRegression
@@ -327,7 +328,7 @@ scores = cross_val_score(reg, X_pca,y_train, cv=skf, scoring="balanced_accuracy"
 print(scores.mean())
 #endregion
 
-
+'''
 
 #region DecisionTreeClassifier
 # indipendente da min_sample_leaf per valori bassi (100-1000), nel range (2000-10000) valore costanti 0.977554
@@ -539,7 +540,7 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 
 
-
+'''
 
 print("best_parameters for used models: ", best_parameters)
 
@@ -552,7 +553,7 @@ print("best_parameters for used models: ", best_parameters)
 
 
 
-# Parte successiva da implementare
+# Scoring overview and comparison
 overall_score = [[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"]]
 for element in best_parameters:
     if element[0] == "AdaBoostClassifier":
@@ -622,27 +623,8 @@ BATCH_SIZE = np.linspace(100, 50, 4) #4
 
 #print('BATCH_SIZE',BATCH_SIZE,'EPOCH_NUMBER',EPOCH_NUMBER)
 
-'''
-EPOCH_NUMBER = 100
-BATCH_SIZE = 1000
-# Fit the model to the training data and record events into a History object.
-history = model.fit(X_train,y_train,epochs=EPOCH_NUMBER,batch_size=BATCH_SIZE,validation_split=0.2,verbose=1) #,callbacks=[es],batch_size=BATCH_SIZE
-# Model evaluation
-test_loss, test_pr = model.evaluate(X_test, y_test)
-print(test_pr)
 
-# Plot loss (y axis) and epochs (x axis) for training set and validation set
-plt.figure()
-plt.xlabel("Epoch")
-plt.ylabel("Loss")
-plt.plot(history.epoch, np.array(history.history["accuracy"]) * 100, label="Train accuracy")
-plt.plot(history.epoch, np.array(history.history["val_accuracy"]) * 100, label="Val accuracy")
-plt.plot(history.epoch, np.array(history.history["loss"]), label="Train lost")
-plt.plot(history.epoch, np.array(history.history["val_loss"]), label="Val lost")
-plt.legend()
-plt.show()
 
-'''
 column_names = ["EpochNumber", "BatchSize", "Precision","Loss"]
 dfToScatter = pd.DataFrame(columns = column_names)
 
@@ -693,6 +675,39 @@ print(dfToScatter)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+EPOCH_NUMBER = 100
+BATCH_SIZE = 1000
+# Fit the model to the training data and record events into a History object.
+history = model.fit(X_train,y_train,epochs=EPOCH_NUMBER,batch_size=BATCH_SIZE,validation_split=0.2,verbose=1) #,callbacks=[es],batch_size=BATCH_SIZE
+# Model evaluation
+test_loss, test_pr = model.evaluate(X_test, y_test)
+print(test_pr)
+
+# Plot loss (y axis) and epochs (x axis) for training set and validation set
+plt.figure()
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.plot(history.epoch, np.array(history.history["accuracy"]) * 100, label="Train accuracy")
+plt.plot(history.epoch, np.array(history.history["val_accuracy"]) * 100, label="Val accuracy")
+plt.plot(history.epoch, np.array(history.history["loss"]), label="Train lost")
+plt.plot(history.epoch, np.array(history.history["val_loss"]), label="Val lost")
+plt.legend()
+plt.show()
+
+'''
 
 
 
