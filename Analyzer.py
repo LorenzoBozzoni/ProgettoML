@@ -23,13 +23,14 @@ import seaborn as sns
 import warnings
 from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold, cross_val_score, train_test_split, KFold, GridSearchCV
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
-from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier,BaggingClassifier
+from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier,BaggingClassifier, RandomForestClassifier
 from keras.callbacks import EarlyStopping
 from sklearn.utils import shuffle
 from xgboost import XGBClassifier
 from sklearn.decomposition import PCA
 from mpl_toolkits.mplot3d import Axes3D
 import tensorflow as tf
+from imblearn.over_sampling import SMOTE
 from tensorflow.keras import models
 from tensorflow.keras import layers
 # not showing warnings in terminal window
@@ -216,9 +217,12 @@ dfNumeric.to_csv('./out.csv')
 # setting random seed for randomsearch for hyperparameters
 rn.seed(time.process_time())
 
+sm = SMOTE()
+X_res, y_res = sm.fit_resample(X, y)
+
 # dividing in training and test set for using kfold cross validation in training set in order to find best parameters 
 
-X_train_v, X_test_v, y_train_v, y_test_v = train_test_split(X,y, test_size=0.20, stratify=y)
+X_train_v, X_test_v, y_train_v, y_test_v = train_test_split(X_res,y_res, test_size=0.20, stratify=y_res)
 
 # convert the matrices into dataframes for using methods
 X_train = pd.DataFrame(X_train_v, columns=X.columns)
@@ -244,7 +248,7 @@ X_scaled = scaler.fit_transform(X_train)
 print("Size X_scaled:", X_scaled.shape)
 
 # dimensionality reduction
-pca = PCA(0.20)
+pca = PCA(0.95)
 X_pca = pca.fit_transform(X_scaled)
 print("Size X_PCA:", X_pca.shape)
 
@@ -256,52 +260,7 @@ dfA.to_csv('./out.csv')
 
 
 
-
 '''
-N = 10000
-
-tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
-tsne_results = tsne.fit_transform(data_subset)
-
-rndperm = np.random.permutation(dfNumeric.shape[0])
-df_subset = df.loc[rndperm[:N],:].copy()
-df_subset['tsne-2d-one'] = tsne_results[:,0]
-df_subset['tsne-2d-two'] = tsne_results[:,1]
-plt.figure(figsize=(16,10))
-sns.scatterplot(
-    x="tsne-2d-one", y="tsne-2d-two",
-    hue="y",
-    palette=sns.color_palette("hls", 10),
-    data=df_subset,
-    legend="full",
-    alpha=0.3
-)
-
-plt.figure(figsize=(16,7))
-ax1 = plt.subplot(1, 2, 1)
-sns.scatterplot(
-    x="pca-one", y="pca-two",
-    hue="y",
-    palette=sns.color_palette("hls", 10),
-    data=df_subset,
-    legend="full",
-    alpha=0.3,
-    ax=ax1
-)
-ax2 = plt.subplot(1, 2, 2)
-sns.scatterplot(
-    x="tsne-2d-one", y="tsne-2d-two",
-    hue="y",
-    palette=sns.color_palette("hls", 10),
-    data=df_subset,
-    legend="full",
-    alpha=0.3,
-    ax=ax2
-)
- '''
-
-
-
 bestfeatures = SelectKBest(score_func=mutual_info_classif, k=10)
 fit = bestfeatures.fit(X,y)
 dfscores = pd.DataFrame(fit.scores_)
@@ -313,22 +272,22 @@ print(featureScores)
 print(bestfeatures.fit_transform(X,y))
 
 
-
+'''
 
 
 v_param_index = 0
 best_parameters = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
-skf = StratifiedKFold(n_splits=10)
+skf = StratifiedKFold(n_splits=5)
 
 
 #region LogisticRegression
 # logistic regression has not parameters to be tuned
 reg = linear_model.LogisticRegression(solver="liblinear",class_weight='balanced')
-scores = cross_val_score(reg, X_pca,y_train, cv=skf, scoring="balanced_accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
+scores = cross_val_score(reg, X_train,y_train, cv=skf, scoring="balanced_accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
 print(scores.mean())
 #endregion
 
-'''
+
 
 #region DecisionTreeClassifier
 # indipendente da min_sample_leaf per valori bassi (100-1000), nel range (2000-10000) valore costanti 0.977554
@@ -540,17 +499,17 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 
 
-'''
 
 print("best_parameters for used models: ", best_parameters)
 
 
 
 
+'''
+model= RandomForestClassifier(n_estimators = 1000, )
+model.fit(X_train,y_train)
 
-
-
-
+'''
 
 
 # Scoring overview and comparison
@@ -593,12 +552,28 @@ print("---------------------------------------- LOGISTIC REGRESSION ------------
 overall_score[4] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="LogisticRegression")
 
 
+'''dec = DecisionTreeClassifier(max_depth=9, min_samples_leaf=1000)
+bag = BaggingClassifier(base_estimator=dec,n_estimators=100)       #element[1].get("n_estimators"),bootstrap=element[1].get("bootstrap")
+bag.fit(X_train, y_train)
+y_pred = bag.predict(X_test)
+print("---------------------------------------- BAGGING CLASSIFIER ----------------------------------------")
+overall_score[1] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="BaggingClassifier")'''
+
+
 tempNames = [overall_score[0][4],overall_score[1][4],overall_score[2][4],overall_score[3][4],overall_score[4][4]]
 print(overall_score)
 for i in range(0,4):
-        tempValues = [overall_score[0][i],overall_score[1][i],overall_score[2][i],overall_score[3][i], overall_score[4][i]]
-        plt.bar(tempNames, tempValues)
-        plt.show()
+    tempValues = [overall_score[0][i],overall_score[1][i],overall_score[2][i],overall_score[3][i], overall_score[4][i]]
+    plt.bar(tempNames, tempValues)
+    if i == 0:
+        plt.title("Accuracy")
+    elif i == 1:
+        plt.title("Recall")
+    elif i == 2:
+        plt.title("f1")
+    elif i == 3:
+        plt.title("f1 man")
+    plt.show()
 
 
 
@@ -662,7 +637,7 @@ print("colonne",list(dfToScatter.columns))
 
 ax2 = fig.add_subplot(122, projection="3d")
 ax2.scatter(dfToScatter["EpochNumber"], dfToScatter["BatchSize"], dfToScatter["Loss"], edgecolors="red",linewidths=6)
-ax2.set_title('Precision')
+ax2.set_title('Loss')
 ax2.set_xlabel("Epoch number")
 ax2.set_ylabel("Batch size")
 ax2.set_zlabel("Loss")
@@ -733,14 +708,9 @@ plt.show()
 
 
 
-'''
-
-from sklearn.ensemble import RandomForestClassifier
-model= RandomForestClassifier(n_estimators = 1000)
-model.fit(X_train,y_train)
 
 
-'''
+
 
 
 
