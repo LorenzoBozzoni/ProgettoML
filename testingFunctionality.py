@@ -311,7 +311,7 @@ X_res, y_res = sm.fit_resample(X, y)
 
 # dividing in training and test set for using kfold cross validation in training set in order to find best parameters 
 
-X_train_v, X_test_v, y_train_v, y_test_v = train_test_split(X_res,y_res, test_size=0.20)
+X_train_v, X_test_v, y_train_v, y_test_v = train_test_split(X_res,y_res, test_size=0.40)
 
 # convert the matrices into dataframes for using methods
 X_train = pd.DataFrame(X_train_v, columns=X.columns)
@@ -376,7 +376,7 @@ print("best_parameters for used models: ", best_parameters)
 
 
 
-reg.fit(X_scaled, y_train)
+reg.fit(X_train, y_train)
 y_pred_logreg = reg.predict(X_test)
 print("---------------------------------------- LOGISTIC REGRESSION ----------------------------------------")
 
@@ -388,7 +388,7 @@ for element in best_parameters:
     if element[0] == "AdaBoostClassifier":
         
         ada = AdaBoostClassifier(learning_rate=element[1].get("learning_rate"))
-        ada.fit(X_scaled, y_train)
+        ada.fit(X_train, y_train)
         y_pred_ada = ada.predict(X_test)
         print("y_pred_ada", y_pred_ada)
         print("---------------------------------------- ADABOOST CLASSIFIER ----------------------------------------")
@@ -396,7 +396,7 @@ for element in best_parameters:
     
     elif element[0] == "BaggingClassifier":
         bag = BaggingClassifier(base_estimator=reg,n_estimators=element[1].get("n_estimators"),bootstrap=element[1].get("bootstrap"))
-        bag.fit(X_scaled, y_train)
+        bag.fit(X_train, y_train)
         y_pred_bag = bag.predict(X_test)
         print("y_pred_bag", y_pred_bag)
         print("---------------------------------------- BAGGING CLASSIFIER ----------------------------------------")
@@ -404,7 +404,7 @@ for element in best_parameters:
     
     elif element[0] == "GradientBoostingClassifier":
         grad = GradientBoostingClassifier(n_estimators=element[1].get("n_estimators"),learning_rate=element[1].get("learning_rate"))
-        grad.fit(X_scaled, y_train)
+        grad.fit(X_train, y_train)
         y_pred_grad = grad.predict(X_test)
         print("y_pred_grad", y_pred_grad)
         print("---------------------------------------- GRADIENT BOOSTING CLASSIFIER ----------------------------------------")
@@ -412,7 +412,7 @@ for element in best_parameters:
     
     elif element[0] == "DecisionTreeClassifier":
         dec = DecisionTreeClassifier(min_samples_leaf=element[1].get("min_samples_leaf"),max_depth=element[1].get("max_depth"))
-        dec.fit(X_scaled, y_train)
+        dec.fit(X_train, y_train)
         y_pred_dec = dec.predict(X_test)
         print("y_pred_dec", y_pred_dec)
         print("---------------------------------------- DECISION TREE CLASSIFIER ----------------------------------------")

@@ -552,12 +552,12 @@ print("---------------------------------------- LOGISTIC REGRESSION ------------
 overall_score[4] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="LogisticRegression")
 
 
-'''dec = DecisionTreeClassifier(max_depth=9, min_samples_leaf=1000)
+dec = DecisionTreeClassifier(max_depth=9, min_samples_leaf=1000)
 bag = BaggingClassifier(base_estimator=dec,n_estimators=100)       #element[1].get("n_estimators"),bootstrap=element[1].get("bootstrap")
 bag.fit(X_train, y_train)
 y_pred = bag.predict(X_test)
 print("---------------------------------------- BAGGING CLASSIFIER ----------------------------------------")
-overall_score[1] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="BaggingClassifier")'''
+overall_score[1] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="BaggingClassifier")
 
 
 tempNames = [overall_score[0][4],overall_score[1][4],overall_score[2][4],overall_score[3][4],overall_score[4][4]]
