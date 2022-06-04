@@ -299,7 +299,7 @@ sns.scatterplot(
 
 
 
-bestfeatures = SelectKBest(score_func=mutual_info_classif, k=10)
+'''bestfeatures = SelectKBest(score_func=mutual_info_classif, k=10)
 fit = bestfeatures.fit(X,y)
 dfscores = pd.DataFrame(fit.scores_)
 dfcolumns = pd.DataFrame(X.columns)
@@ -307,7 +307,7 @@ dfcolumns = pd.DataFrame(X.columns)
 featureScores = pd.concat([dfcolumns,dfscores],axis=1)
 featureScores.columns = ['Specs','Score'] #naming the dataframe columns
 print(featureScores)
-print(bestfeatures.fit_transform(X,y))
+print(bestfeatures.fit_transform(X,y))'''
 
 
 
@@ -315,7 +315,7 @@ print(bestfeatures.fit_transform(X,y))
 
 v_param_index = 0
 best_parameters = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
-skf = StratifiedKFold(n_splits=10)
+skf = StratifiedKFold(n_splits=5)
 
 
 #region LogisticRegression
@@ -378,7 +378,7 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 v_param_index += 1
 
-
+'''
 
 
 #region AdaBoostClassifier
@@ -388,7 +388,8 @@ learning_rate_range = list(np.arange(0.1,4.1,0.25))      #list(np.arange(0.1,4.1
 param_grid = dict(n_estimators=estimators_range, learning_rate=learning_rate_range)    
 print(param_grid)
 grid = GridSearchCV(modelAda, param_grid=param_grid, cv=skf, scoring="balanced_accuracy", verbose=3)
-grid.fit(X_pca,y_train)
+grid.fit(X_train,y_train)
+print(grid.score(X_test, y_test))
 score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
 print("AdaBoost:",score_df)
 print(grid.best_score_)
@@ -431,8 +432,7 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 v_param_index += 1
 
-
-
+'''
 
 #region GradientBoostingClassifier
 modelGrad= GradientBoostingClassifier()
@@ -550,70 +550,6 @@ print("best_parameters for used models: ", best_parameters)
 
 
 
-# Scoring overview and comparison
-overall_score = [[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"]]
-for element in best_parameters:
-    if element[0] == "AdaBoostClassifier":
-        
-        ada = AdaBoostClassifier(learning_rate=element[1].get("learning_rate"))
-        ada.fit(X_train, y_train)
-        y_pred = ada.predict(X_test)
-        print("---------------------------------------- ADABOOST CLASSIFIER ----------------------------------------")
-        overall_score[0] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="AdaBoostClassifier")
-    
-    elif element[0] == "BaggingClassifier":
-        bag = BaggingClassifier(base_estimator=reg,n_estimators=element[1].get("n_estimators"),bootstrap=element[1].get("bootstrap"))
-        bag.fit(X_train, y_train)
-        y_pred = bag.predict(X_test)
-        print("---------------------------------------- BAGGING CLASSIFIER ----------------------------------------")
-        overall_score[1] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="BaggingClassifier")
-    
-    elif element[0] == "GradientBoostingClassifier":
-        grad = GradientBoostingClassifier(n_estimators=element[1].get("n_estimators"),learning_rate=element[1].get("learning_rate"))
-        grad.fit(X_train, y_train)
-        y_pred = grad.predict(X_test)
-        print("---------------------------------------- GRADIENT BOOSTING CLASSIFIER ----------------------------------------")
-        overall_score[2] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="GradientBoostingClassifier")
-    
-    elif element[0] == "DecisionTreeClassifier":
-        dec = DecisionTreeClassifier(min_samples_leaf=element[1].get("min_samples_leaf"),max_depth=element[1].get("max_depth"))
-        dec.fit(X_train, y_train)
-        y_pred = dec.predict(X_test)
-        print("---------------------------------------- DECISION TREE CLASSIFIER ----------------------------------------")
-        overall_score[3] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="DecisionTreeClassifier")
-
-
-
-reg.fit(X_train, y_train)
-y_pred = reg.predict(X_test)
-print("---------------------------------------- LOGISTIC REGRESSION ----------------------------------------")
-overall_score[4] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="LogisticRegression")
-
-
-dec = DecisionTreeClassifier(max_depth=9, min_samples_leaf=1000)
-bag = BaggingClassifier(base_estimator=dec,n_estimators=100)       #element[1].get("n_estimators"),bootstrap=element[1].get("bootstrap")
-bag.fit(X_train, y_train)
-y_pred = bag.predict(X_test)
-print("---------------------------------------- BAGGING CLASSIFIER ----------------------------------------")
-overall_score[1] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="BaggingClassifier")
-
-
-tempNames = [overall_score[0][4],overall_score[1][4],overall_score[2][4],overall_score[3][4],overall_score[4][4]]
-print(overall_score)
-for i in range(0,4):
-    tempValues = [overall_score[0][i],overall_score[1][i],overall_score[2][i],overall_score[3][i], overall_score[4][i]]
-    plt.bar(tempNames, tempValues)    
-    if i == 0:
-        plt.title("Accuracy")
-    elif i == 1:
-        plt.title("Recall")
-    elif i == 2:
-        plt.title("f1")
-    elif i == 3:
-        plt.title("f1 man")
-        plt.show()
-
-
 
 
 
@@ -720,18 +656,10 @@ plt.plot(history.epoch, np.array(history.history["val_loss"]), label="Val lost")
 plt.legend()
 plt.show()
 
-'''
-
-
-
-
-
- 
-'''
         # Plot loss (y axis) and epochs (x axis) for training set and validation set
         # plt.figure()
         plt.xlabel("Epoch")
-        plt.ylabel("Loss")
+        plt.ylabel("Parameters")
 
         plt.plot(history.epoch, np.array(history.history["loss"]), label="Train loss")
         plt.plot(history.epoch, np.array(history.history["val_loss"]), label="Val loss")
@@ -755,6 +683,70 @@ model.fit(X_train,y_train)
 
 '''
 
+
+
+# Scoring overview and comparison
+overall_score = [[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"]]
+for element in best_parameters:
+    if element[0] == "AdaBoostClassifier":
+        
+        ada = AdaBoostClassifier(learning_rate=element[1].get("learning_rate"))
+        ada.fit(X_train, y_train)
+        y_pred = ada.predict(X_test)
+        print("---------------------------------------- ADABOOST CLASSIFIER ----------------------------------------")
+        overall_score[0] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="AdaBoostClassifier")
+    
+    elif element[0] == "BaggingClassifier":
+        bag = BaggingClassifier(base_estimator=reg,n_estimators=element[1].get("n_estimators"),bootstrap=element[1].get("bootstrap"))
+        bag.fit(X_train, y_train)
+        y_pred = bag.predict(X_test)
+        print("---------------------------------------- BAGGING CLASSIFIER ----------------------------------------")
+        overall_score[1] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="BaggingClassifier")
+    
+    elif element[0] == "GradientBoostingClassifier":
+        grad = GradientBoostingClassifier(n_estimators=element[1].get("n_estimators"),learning_rate=element[1].get("learning_rate"))
+        grad.fit(X_train, y_train)
+        y_pred = grad.predict(X_test)
+        print("---------------------------------------- GRADIENT BOOSTING CLASSIFIER ----------------------------------------")
+        overall_score[2] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="GradientBoostingClassifier")
+    
+    elif element[0] == "DecisionTreeClassifier":
+        dec = DecisionTreeClassifier(min_samples_leaf=element[1].get("min_samples_leaf"),max_depth=element[1].get("max_depth"))
+        dec.fit(X_train, y_train)
+        y_pred = dec.predict(X_test)
+        print("---------------------------------------- DECISION TREE CLASSIFIER ----------------------------------------")
+        overall_score[3] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="DecisionTreeClassifier")
+
+
+
+reg.fit(X_train, y_train)
+y_pred = reg.predict(X_test)
+print("---------------------------------------- LOGISTIC REGRESSION ----------------------------------------")
+overall_score[4] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="LogisticRegression")
+
+
+dec = DecisionTreeClassifier(max_depth=9, min_samples_leaf=1000)
+bag = BaggingClassifier(base_estimator=dec,n_estimators=100)       #element[1].get("n_estimators"),bootstrap=element[1].get("bootstrap")
+bag.fit(X_train, y_train)
+y_pred = bag.predict(X_test)
+print("---------------------------------------- BAGGING CLASSIFIER ----------------------------------------")
+overall_score[1] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="BaggingClassifier")
+
+
+tempNames = [overall_score[0][4],overall_score[1][4],overall_score[2][4],overall_score[3][4],overall_score[4][4]]
+print(overall_score)
+for i in range(0,4):
+    tempValues = [overall_score[0][i],overall_score[1][i],overall_score[2][i],overall_score[3][i], overall_score[4][i]]
+    plt.bar(tempNames, tempValues)    
+    if i == 0:
+        plt.title("Accuracy")
+    elif i == 1:
+        plt.title("Recall")
+    elif i == 2:
+        plt.title("f1")
+    elif i == 3:
+        plt.title("f1 man")
+        plt.show()
 
 
 
