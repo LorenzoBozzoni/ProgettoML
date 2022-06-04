@@ -23,14 +23,14 @@ import seaborn as sns
 import warnings
 from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold, cross_val_score, train_test_split, KFold, GridSearchCV
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
-from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier,BaggingClassifier, RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier,BaggingClassifier
 from keras.callbacks import EarlyStopping
 from sklearn.utils import shuffle
 from xgboost import XGBClassifier
+from imblearn.over_sampling import SMOTE
 from sklearn.decomposition import PCA
 from mpl_toolkits.mplot3d import Axes3D
 import tensorflow as tf
-from imblearn.over_sampling import SMOTE
 from tensorflow.keras import models
 from tensorflow.keras import layers
 # not showing warnings in terminal window
@@ -151,27 +151,20 @@ plt.show()"""
 dfNumeric = df  # copy of the dataframe, df contains categorical values while dfNumeric has all those values converted in numeric
 
 
-#region removing outvalues
+# removing outvalues
 for (columnName, columnData) in df.iteritems():
     if columnData.nunique() > 7 and columnName != "Status":
-
         max_thresold = dfNumeric[columnName].quantile(0.995)
         min_thresold = dfNumeric[columnName].quantile(0.005)
-        print("COLONNA CON OUTVALUES", columnName, "MAXPERC",max_thresold, "MINPERC",min_thresold)
         dfNumeric = df[(df[columnName] < max_thresold) & (df[columnName] > min_thresold)]
-#endregion
 
-#region substituing categorical values with numerical ones
+
+# substituing categorical values with numerical ones
 for (columnName, columnData) in df.iteritems():
     if columnData.nunique() <= 7 and columnName != "Status":
-        # print("columnName:", columnName)
         freqSeries = columnData.value_counts()
-        #print("columnData.value_counts().index", columnData.value_counts().index)
-        #print("np.arange(0, columnData.nunique())",np.arange(0, columnData.nunique()))
-
         dfNumeric[columnName].replace(columnData.value_counts().index,np.arange(0, columnData.nunique()),inplace=True)
-        #print(dfNumeric[columnName])
-#endregion
+
 
 
 
@@ -260,7 +253,52 @@ dfA.to_csv('./out.csv')
 
 
 
+
 '''
+N = 10000
+
+tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+tsne_results = tsne.fit_transform(data_subset)
+
+rndperm = np.random.permutation(dfNumeric.shape[0])
+df_subset = df.loc[rndperm[:N],:].copy()
+df_subset['tsne-2d-one'] = tsne_results[:,0]
+df_subset['tsne-2d-two'] = tsne_results[:,1]
+plt.figure(figsize=(16,10))
+sns.scatterplot(
+    x="tsne-2d-one", y="tsne-2d-two",
+    hue="y",
+    palette=sns.color_palette("hls", 10),
+    data=df_subset,
+    legend="full",
+    alpha=0.3
+)
+
+plt.figure(figsize=(16,7))
+ax1 = plt.subplot(1, 2, 1)
+sns.scatterplot(
+    x="pca-one", y="pca-two",
+    hue="y",
+    palette=sns.color_palette("hls", 10),
+    data=df_subset,
+    legend="full",
+    alpha=0.3,
+    ax=ax1
+)
+ax2 = plt.subplot(1, 2, 2)
+sns.scatterplot(
+    x="tsne-2d-one", y="tsne-2d-two",
+    hue="y",
+    palette=sns.color_palette("hls", 10),
+    data=df_subset,
+    legend="full",
+    alpha=0.3,
+    ax=ax2
+)
+ '''
+
+
+
 bestfeatures = SelectKBest(score_func=mutual_info_classif, k=10)
 fit = bestfeatures.fit(X,y)
 dfscores = pd.DataFrame(fit.scores_)
@@ -272,22 +310,22 @@ print(featureScores)
 print(bestfeatures.fit_transform(X,y))
 
 
-'''
+
 
 
 v_param_index = 0
 best_parameters = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
-skf = StratifiedKFold(n_splits=5)
+skf = StratifiedKFold(n_splits=10)
 
 
 #region LogisticRegression
 # logistic regression has not parameters to be tuned
 reg = linear_model.LogisticRegression(solver="liblinear",class_weight='balanced')
-scores = cross_val_score(reg, X_train,y_train, cv=skf, scoring="balanced_accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
+scores = cross_val_score(reg, X_pca,y_train, cv=skf, scoring="balanced_accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
 print(scores.mean())
 #endregion
 
-
+'''
 
 #region DecisionTreeClassifier
 # indipendente da min_sample_leaf per valori bassi (100-1000), nel range (2000-10000) valore costanti 0.977554
@@ -499,17 +537,17 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 
 
+'''
 
 print("best_parameters for used models: ", best_parameters)
 
 
 
 
-'''
-model= RandomForestClassifier(n_estimators = 1000, )
-model.fit(X_train,y_train)
 
-'''
+
+
+
 
 
 # Scoring overview and comparison
@@ -564,7 +602,7 @@ tempNames = [overall_score[0][4],overall_score[1][4],overall_score[2][4],overall
 print(overall_score)
 for i in range(0,4):
     tempValues = [overall_score[0][i],overall_score[1][i],overall_score[2][i],overall_score[3][i], overall_score[4][i]]
-    plt.bar(tempNames, tempValues)
+    plt.bar(tempNames, tempValues)    
     if i == 0:
         plt.title("Accuracy")
     elif i == 1:
@@ -573,7 +611,7 @@ for i in range(0,4):
         plt.title("f1")
     elif i == 3:
         plt.title("f1 man")
-    plt.show()
+        plt.show()
 
 
 
@@ -708,9 +746,14 @@ plt.show()
 
 
 
+'''
+
+from sklearn.ensemble import RandomForestClassifier
+model= RandomForestClassifier(n_estimators = 1000)
+model.fit(X_train,y_train)
 
 
-
+'''
 
 
 
