@@ -7,6 +7,7 @@ import time
 from matplotlib import projections
 from matplotlib.ft2font import HORIZONTAL
 import pandas as pd
+from IPython.display import display
 import matplotlib.pyplot as plt
 import numpy as np
 from dtreeviz.trees import dtreeviz # remember to load the package
@@ -103,10 +104,10 @@ def getScoreMetrics(y_test, y_pred, modelName):
 
     print("\nAccuracy: ", acc)
     print("Recall: ", rec)
-    print("f1 score calculated manually: ", f1score)
-    print("f1 score calculated automatically: ", f1scoreman)
+    print("f1 score calculated manually: ", f1scoreman)
+    print("f1 score calculated automatically: ", f1score)
 
-    m = confusion_matrix(y_test, y_pred, labels=[0, 1])  # labels ti permette di specificare quale label (target output) considerare nella confusion matrix
+    m = confusion_matrix(y_test, y_pred, labels=[0, 1])  
     print(m)
 
     disp = ConfusionMatrixDisplay(confusion_matrix=m, display_labels=[0, 1])
@@ -125,10 +126,6 @@ plt.style.use("seaborn")
 df = pd.read_csv("./Loan_Default.csv")
 df.drop(["ID", "year"], axis=1, inplace=True)
 
-target = "Status"
-labels = ["Defaulter", "Not-Defaulter"]
-features = [i for i in df.columns.values if i not in [target]]
-
 original_df = df.copy(deep=True)
 
 
@@ -136,16 +133,13 @@ cat_features = []
 num_features = []
 
 
-#visualizeCategorical(df=df)
-#visualizeNumerical(df=df)
+visualizeCategorical(df=df)
+visualizeNumerical(df=df)
 
-# questa riga sotto è corretta ma usa uno spatasso di RAM
-#sns.heatmap(df.isnull(), yticklabels=False, cbar=False, cmap="viridis", robust=True)
-#plt.show()
+# questa riga sotto è corretta ma utilizza molta RAM
+sns.heatmap(df.isnull(), yticklabels=False, cbar=False, cmap="viridis", robust=True)
+plt.show()
 
-# vediamo la presenza di valori nulli nelle features con maggior numero
-"""sns.heatmap(df[["age", "Interest_rate_spread", "rate_of_interest"]].isnull(), cmap="viridis")
-plt.show()"""
 
 
 dfNumeric = df  # copy of the dataframe, df contains categorical values while dfNumeric has all those values converted in numeric
@@ -165,56 +159,41 @@ for (columnName, columnData) in df.iteritems():
         freqSeries = columnData.value_counts()
         dfNumeric[columnName].replace(columnData.value_counts().index,np.arange(0, columnData.nunique()),inplace=True)
 
-
+print(df.info())
 
 
 # displaying information for the newly created dataframe
-# display(dfNumeric.describe(include="all"))
+display(dfNumeric.describe(include="all"))
 
 
 # plotting correlation grid for all features (used for null values management)
-#fig, ax = plt.subplots(figsize=(32, 32))
-#ax = sns.heatmap(dfNumeric.corr(), vmin=-1, vmax=1, cmap="YlGnBu")  # non prende le features categoriche. Per avere i valori: "annot=True"
-#plt.show()
+fig, ax = plt.subplots(figsize=(32, 32))
+ax = sns.heatmap(dfNumeric.corr(), vmin=-1, vmax=1, cmap="YlGnBu")  # non prende le features categoriche. Per avere i valori: "annot=True"
+plt.show()
 
 
 # visualize numeric feature's histograms after removing outliers
-#visualizeNumerical(dfNumeric)     
-
-#print(dfNumeric.corr())
-#print(dfNumeric.isnull().sum())
+visualizeNumerical(dfNumeric)     
 
 # replacing null values with the mean of the respective feature
 dfNumeric.fillna(dfNumeric.mean(),inplace=True)
 
 # removing features with no statistical contribution 
-dfNumeric = dfNumeric.drop(["construction_type","Secured_by","Security_Type"], axis=1)       # feature selection
+dfNumeric = dfNumeric.drop(["construction_type","Secured_by","Security_Type"], axis=1)     
 
-
-#visualizeNumerical(dfNumeric)
 
 
 
 # dividing training features from target 
+target = "Status"
 X = dfNumeric.drop(target, axis = 1)
 y = dfNumeric[target]
 
-
-
-'''  SAVING dfNumeric IN CSV FILE 
-import os  
-os.makedirs('./', exist_ok=True)  
-dfNumeric.to_csv('./out.csv') 
-
-'''
-# setting random seed for randomsearch for hyperparameters
-rn.seed(time.process_time())
 
 sm = SMOTE()
 X_res, y_res = sm.fit_resample(X, y)
 
 # dividing in training and test set for using kfold cross validation in training set in order to find best parameters 
-
 X_train_v, X_test_v, y_train_v, y_test_v = train_test_split(X_res,y_res, test_size=0.20, stratify=y_res)
 
 # convert the matrices into dataframes for using methods
@@ -224,93 +203,26 @@ y_train = pd.DataFrame(y_train_v, columns=["Status"])
 y_test = pd.DataFrame(y_test_v, columns=["Status"])
 
 # obtaining matrices size
-print("ShapeDf",df.shape)
-print("ShapeDfNumeric",dfNumeric.shape)
-print("ShapeX",X.shape)
-print("Shapey",y.shape)
-print("ShapeX_train",X_train.shape)
-print("ShapeX_test",X_test.shape)
-print("Shapey_train",y_train.shape)
-print("Shapey_test",y_test.shape)
-#print("Full X_train", X_train, "type: ", type(X_train))
+'''
+print("Shape Df",df.shape)
+print("Shape DfNumeric",dfNumeric.shape)
+print("Shape X",X.shape)
+print("Shape y",y.shape)
+print("Shape X_train",X_train.shape)
+print("Shape X_test",X_test.shape)
+print("Shape y_train",y_train.shape)
+print("Shape y_test",y_test.shape)
 
-
+'''
 # feature scaling
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X_train)
 print("Size X_scaled:", X_scaled.shape)
 
 # dimensionality reduction
-pca = PCA(0.95)
+pca = PCA(0.95)             #keeping 95% of the information
 X_pca = pca.fit_transform(X_scaled)
 print("Size X_PCA:", X_pca.shape)
-
-import os  
-os.makedirs('./', exist_ok=True)  
-dfA = pd.DataFrame(X_pca) 
-dfA.to_csv('./out.csv') 
-
-
-
-
-
-'''
-N = 10000
-
-tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
-tsne_results = tsne.fit_transform(data_subset)
-
-rndperm = np.random.permutation(dfNumeric.shape[0])
-df_subset = df.loc[rndperm[:N],:].copy()
-df_subset['tsne-2d-one'] = tsne_results[:,0]
-df_subset['tsne-2d-two'] = tsne_results[:,1]
-plt.figure(figsize=(16,10))
-sns.scatterplot(
-    x="tsne-2d-one", y="tsne-2d-two",
-    hue="y",
-    palette=sns.color_palette("hls", 10),
-    data=df_subset,
-    legend="full",
-    alpha=0.3
-)
-
-plt.figure(figsize=(16,7))
-ax1 = plt.subplot(1, 2, 1)
-sns.scatterplot(
-    x="pca-one", y="pca-two",
-    hue="y",
-    palette=sns.color_palette("hls", 10),
-    data=df_subset,
-    legend="full",
-    alpha=0.3,
-    ax=ax1
-)
-ax2 = plt.subplot(1, 2, 2)
-sns.scatterplot(
-    x="tsne-2d-one", y="tsne-2d-two",
-    hue="y",
-    palette=sns.color_palette("hls", 10),
-    data=df_subset,
-    legend="full",
-    alpha=0.3,
-    ax=ax2
-)
- '''
-
-
-
-'''bestfeatures = SelectKBest(score_func=mutual_info_classif, k=10)
-fit = bestfeatures.fit(X,y)
-dfscores = pd.DataFrame(fit.scores_)
-dfcolumns = pd.DataFrame(X.columns)
-#concat two dataframes for better visualization
-featureScores = pd.concat([dfcolumns,dfscores],axis=1)
-featureScores.columns = ['Specs','Score'] #naming the dataframe columns
-print(featureScores)
-print(bestfeatures.fit_transform(X,y))'''
-
-
-
 
 
 v_param_index = 0
@@ -321,20 +233,19 @@ skf = StratifiedKFold(n_splits=5)
 #region LogisticRegression
 # logistic regression has not parameters to be tuned
 reg = linear_model.LogisticRegression(solver="liblinear",class_weight='balanced')
-scores = cross_val_score(reg, X_pca,y_train, cv=skf, scoring="balanced_accuracy")                           # scores è un vettore numpy quindi bisogna vedere quello
+scores = cross_val_score(reg, X_pca,y_train, cv=skf, scoring="balanced_accuracy")                          
 print(scores.mean())
 #endregion
 
-'''
+
 
 #region DecisionTreeClassifier
-# indipendente da min_sample_leaf per valori bassi (100-1000), nel range (2000-10000) valore costanti 0.977554
-clf = DecisionTreeClassifier(class_weight='balanced') #min_samples_leaf=5000, max_depth=10
-sample_range = list(np.arange(1000,5001,1000)) #15001
+clf = DecisionTreeClassifier(class_weight='balanced') 
+sample_range = list(np.arange(1000,5001,1000)) 
 depth_range = list(range(2,10))
 param_grid = dict(min_samples_leaf=sample_range, max_depth=depth_range)    
 print(param_grid)
-grid = GridSearchCV(clf, param_grid=param_grid, cv=skf, scoring="balanced_accuracy", verbose=3)    #RandomizedSearchCV , random_state=rn.randint(0,10)
+grid = GridSearchCV(clf, param_grid=param_grid, cv=skf, scoring="balanced_accuracy", verbose=3)    
 grid.fit(X_pca,y_train)
 score_df = pd.DataFrame(grid.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
 print("DecisionTree:",score_df)
@@ -364,8 +275,8 @@ ax.set_title('Decision Tree Classifier')
 ax.set_xlabel("max_depth")
 ax.set_ylabel("min_sample_leaf")
 ax.set_zlabel("mean_test_score")
-print("x:",score_df["params"])    # get("max_depth")
-print("y:",score_df["params"])     # .get("min_sample_leaf")
+print("x:",score_df["params"])    
+print("y:",score_df["params"])     
 print("z:",score_df["mean_test_score"])
 print("columns name",list(score_df.columns))
 plt.show()
@@ -378,7 +289,7 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 v_param_index += 1
 
-'''
+
 
 
 #region AdaBoostClassifier
@@ -432,7 +343,7 @@ best_parameters[v_param_index][2] = grid.best_score_
 
 v_param_index += 1
 
-'''
+
 
 #region GradientBoostingClassifier
 modelGrad= GradientBoostingClassifier()
@@ -535,44 +446,20 @@ best_parameters[v_param_index][1] = grid.best_params_
 best_parameters[v_param_index][2] = grid.best_score_
 #endregion
 
-
-
-'''
-
+# displaying best parameters obtained during k-fold crossvalidation
 print("best_parameters for used models: ", best_parameters)
 
 
-
-
-
-
-
-
-
-
-
-
-
-# development
+# neural network
 model = models.Sequential()
-model.add(layers.Dense(60, activation="relu", input_shape=(X_train.shape[1],)))
+model.add(layers.Dense(28, activation="relu", input_shape=(X_train.shape[1],)))
 model.add(layers.Dense(15, activation="relu"))
 model.add(layers.Dense(1, activation="sigmoid"))
 
-model.compile(
-    loss="binary_crossentropy", optimizer="adam", metrics=['BinaryAccuracy']
-)
+model.compile(loss="binary_crossentropy", optimizer="adam", metrics=['BinaryAccuracy'])
 
-#es = EarlyStopping(monitor='val_loss', mode='min', verbose=1)
-# ten numbers with equal distance from 0 to 50 (5,10,15,20,...)
-EPOCH_NUMBER = np.linspace(1, 12, 7)    #5
-# ten numbers with equal distance from 0 to 50 (5,10,15,20,...)
-BATCH_SIZE = np.linspace(100, 50, 4) #4
-
-
-#print('BATCH_SIZE',BATCH_SIZE,'EPOCH_NUMBER',EPOCH_NUMBER)
-
-
+EPOCH_NUMBER = np.linspace(1, 12, 7)    
+BATCH_SIZE = np.linspace(100, 50, 4) 
 
 column_names = ["EpochNumber", "BatchSize", "Precision","Loss"]
 dfToScatter = pd.DataFrame(columns = column_names)
@@ -625,66 +512,6 @@ print(dfToScatter)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-'''
-EPOCH_NUMBER = 100
-BATCH_SIZE = 1000
-# Fit the model to the training data and record events into a History object.
-history = model.fit(X_train,y_train,epochs=EPOCH_NUMBER,batch_size=BATCH_SIZE,validation_split=0.2,verbose=1) #,callbacks=[es],batch_size=BATCH_SIZE
-# Model evaluation
-test_loss, test_pr = model.evaluate(X_test, y_test)
-print(test_pr)
-
-# Plot loss (y axis) and epochs (x axis) for training set and validation set
-plt.figure()
-plt.xlabel("Epoch")
-plt.ylabel("Loss")
-plt.plot(history.epoch, np.array(history.history["accuracy"]) * 100, label="Train accuracy")
-plt.plot(history.epoch, np.array(history.history["val_accuracy"]) * 100, label="Val accuracy")
-plt.plot(history.epoch, np.array(history.history["loss"]), label="Train lost")
-plt.plot(history.epoch, np.array(history.history["val_loss"]), label="Val lost")
-plt.legend()
-plt.show()
-
-        # Plot loss (y axis) and epochs (x axis) for training set and validation set
-        # plt.figure()
-        plt.xlabel("Epoch")
-        plt.ylabel("Parameters")
-
-        plt.plot(history.epoch, np.array(history.history["loss"]), label="Train loss")
-        plt.plot(history.epoch, np.array(history.history["val_loss"]), label="Val loss")
-        plt.plot(history.epoch, np.array(history.history["accuracy"]) * 100, label="Train accuracy")
-        plt.plot(history.epoch, np.array(history.history["val_accuracy"]) * 100, label="Val accuracy")
-        plt.legend()
-    plt.show()
-'''
-
-
-
-
-
-
-'''
-
-from sklearn.ensemble import RandomForestClassifier
-model= RandomForestClassifier(n_estimators = 1000)
-model.fit(X_train,y_train)
-
-
-'''
-
-
-
 # Scoring overview and comparison
 overall_score = [[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"],[0,0,0,0,"null"]]
 for element in best_parameters:
@@ -718,19 +545,10 @@ for element in best_parameters:
         overall_score[3] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="DecisionTreeClassifier")
 
 
-
 reg.fit(X_train, y_train)
 y_pred = reg.predict(X_test)
 print("---------------------------------------- LOGISTIC REGRESSION ----------------------------------------")
 overall_score[4] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="LogisticRegression")
-
-
-dec = DecisionTreeClassifier(max_depth=9, min_samples_leaf=1000)
-bag = BaggingClassifier(base_estimator=dec,n_estimators=100)       #element[1].get("n_estimators"),bootstrap=element[1].get("bootstrap")
-bag.fit(X_train, y_train)
-y_pred = bag.predict(X_test)
-print("---------------------------------------- BAGGING CLASSIFIER ----------------------------------------")
-overall_score[1] = getScoreMetrics(y_test=y_test, y_pred=y_pred, modelName="BaggingClassifier")
 
 
 tempNames = [overall_score[0][4],overall_score[1][4],overall_score[2][4],overall_score[3][4],overall_score[4][4]]
