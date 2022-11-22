@@ -10,7 +10,6 @@ import pandas as pd
 from IPython.display import display
 import matplotlib.pyplot as plt
 import numpy as np
-from dtreeviz.trees import dtreeviz # remember to load the package
 from mpl_toolkits import mplot3d
 from sklearn import linear_model
 import sklearn
